@@ -1,2 +1,2 @@
-# Computer Vision and Deep Learning
-Lecture notes and sample programs for computer vision and deep learning
+# Computer Vision
+I intend to reimplement computer vision and AI algorithms in this project.
