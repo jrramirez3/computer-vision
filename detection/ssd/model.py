@@ -43,6 +43,7 @@ def conv_layer(inputs,
                activation=None):
 
     x = conv2d(inputs,
+               filters=filters,
                kernel_size=kernel_size,
                strides=strides,
                name='conv'+postfix)
@@ -101,10 +102,12 @@ def build_basenetwork(input_shape,
 
 
 def build_ssd(inputs,
-              basenetwork):
+              basenetwork,
+              n_boxes,
+              n_classes):
               
 
-    conv4, conv5, conv6, conv7 = basenetwork(innputs)
+    conv4, conv5, conv6, conv7 = basenetwork(inputs)
 
     classes4  = conv2d(conv4,
                        n_boxes[0] * n_classes,
@@ -142,6 +145,46 @@ def build_ssd(inputs,
                      name='boxes7')
 
 
+    # Reshape the class predictions, yielding 3D tensors of shape `(batch, height * width * n_boxes, n_classes)`
+    # We want the classes isolated in the last axis to perform softmax on them
+    classes4_reshaped = Reshape((-1, n_classes), name='classes4_reshape')(classes4)
+    classes5_reshaped = Reshape((-1, n_classes), name='classes5_reshape')(classes5)
+    classes6_reshaped = Reshape((-1, n_classes), name='classes6_reshape')(classes6)
+    classes7_reshaped = Reshape((-1, n_classes), name='classes7_reshape')(classes7)
+
+    # Reshape the box coordinate predictions, yielding 3D tensors of shape `(batch, height * width * n_boxes, 4)`
+    # We want the four box coordinates isolated in the last axis to compute the smooth L1 loss
+    boxes4_reshaped = Reshape((-1, 4), name='boxes4_reshape')(boxes4)
+    boxes5_reshaped = Reshape((-1, 4), name='boxes5_reshape')(boxes5)
+    boxes6_reshaped = Reshape((-1, 4), name='boxes6_reshape')(boxes6)
+    boxes7_reshaped = Reshape((-1, 4), name='boxes7_reshape')(boxes7)
+
+
+    # Concatenate the predictions from the different layers and the assosciated anchor box tensors
+    # Axis 0 (batch) and axis 2 (n_classes or 4, respectively) are identical for all layer predictions,
+    # so we want to concatenate along axis 1
+    # Output shape of `classes_concat`: (batch, n_boxes_total, n_classes)
+    classes_concat = Concatenate(axis=1, name='classes_concat')([classes4_reshaped,
+                                                                 classes5_reshaped,
+                                                                 classes6_reshaped,
+                                                                 classes7_reshaped])
+
+    # Output shape of `boxes_concat`: (batch, n_boxes_total, 4)
+    boxes_concat = Concatenate(axis=1, name='boxes_concat')([boxes4_reshaped,
+                                                             boxes5_reshaped,
+                                                             boxes6_reshaped,
+                                                             boxes7_reshaped])
+
+    # The box coordinate predictions will go into the loss function just the way they are,
+    # but for the class predictions, we'll apply a softmax activation layer first
+    classes_softmax = Activation('softmax', name='classes_softmax')(classes_concat)
+
+    # Concatenate the class and box coordinate predictions and the anchors to one large predictions tensor
+    # Output shape of `predictions`: (batch, n_boxes_total, n_classes + 4 + 8)
+    predictions = Concatenate(axis=2, name='predictions')([classes_softmax, boxes_concat, anchors_concat])
+
+    model = Model(inputs=x, outputs=predictions)
+    return model
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
