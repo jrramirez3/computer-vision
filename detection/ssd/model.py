@@ -8,8 +8,8 @@ from __future__ import print_function
 
 from keras.layers import Activation, Dense, Input
 from keras.layers import Conv2D, Flatten
-from keras.layers import BatchNormalization
-from keras.layers import ELU, MaxPooling2D
+from keras.layers import BatchNormalization, Concatenate
+from keras.layers import ELU, MaxPooling2D, Reshape
 from keras.models import Model
 from keras.models import load_model
 from keras.layers.merge import concatenate
@@ -101,12 +101,13 @@ def build_basenetwork(input_shape,
     return basenetwork
 
 
-def build_ssd(inputs,
+def build_ssd(input_shape,
               basenetwork,
-              n_boxes,
-              n_classes):
+              n_boxes=[3, 3, 3, 3],
+              n_classes=4):
               
 
+    inputs = Input(shape=input_shape)
     conv4, conv5, conv6, conv7 = basenetwork(inputs)
 
     classes4  = conv2d(conv4,
@@ -181,9 +182,10 @@ def build_ssd(inputs,
 
     # Concatenate the class and box coordinate predictions and the anchors to one large predictions tensor
     # Output shape of `predictions`: (batch, n_boxes_total, n_classes + 4 + 8)
-    predictions = Concatenate(axis=2, name='predictions')([classes_softmax, boxes_concat, anchors_concat])
+    predictions = Concatenate(axis=2, name='predictions')([classes_softmax, boxes_concat])
+    # predictions = Concatenate(axis=2, name='predictions')([classes_softmax, boxes_concat, anchors_concat])
 
-    model = Model(inputs=x, outputs=predictions)
+    model = Model(inputs=inputs, outputs=predictions)
     return model
 
 if __name__ == '__main__':
@@ -194,3 +196,5 @@ if __name__ == '__main__':
     output_shape = (480, 300, 3)
     base = build_basenetwork(input_shape, output_shape)
     base.summary()
+    ssd = build_ssd(input_shape, base)
+    ssd.summary()
