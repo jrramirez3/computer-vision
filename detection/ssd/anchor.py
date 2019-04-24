@@ -8,7 +8,7 @@ from __future__ import print_function
 
 import numpy as np
 from keras import backend as K
-from keras.layers import Layer
+from tensorflow.keras.layers import Layer
 
 
 class Anchor(Layer):
@@ -45,7 +45,7 @@ class Anchor(Layer):
 
         wh_list = np.array(wh_list)
 
-        batch_size, feature_map_height, feature_map_width, feature_map_channels = x._keras_shape
+        batch_size, feature_map_height, feature_map_width, feature_map_channels = K.int_shape(x) #x._keras_shape
         step_height = self.img_height / feature_map_height
         step_width = self.img_width / feature_map_width
         offset_height = 0.5

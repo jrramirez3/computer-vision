@@ -6,14 +6,14 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from keras.layers import Activation, Dense, Input
-from keras.layers import Conv2D, Flatten
-from keras.layers import BatchNormalization, Concatenate
-from keras.layers import ELU, MaxPooling2D, Reshape
-from keras.models import Model
-from keras.models import load_model
-from keras.layers.merge import concatenate
-from keras.utils import plot_model
+from tensorflow.keras.layers import Activation, Dense, Input
+from tensorflow.keras.layers import Conv2D, Flatten
+from tensorflow.keras.layers import BatchNormalization, Concatenate
+from tensorflow.keras.layers import ELU, MaxPooling2D, Reshape
+from tensorflow.keras.models import Model
+from tensorflow.keras.models import load_model
+from tensorflow.keras.layers import Concatenate
+from tensorflow.keras.utils import plot_model
 from anchor import Anchor
 
 import numpy as np
@@ -151,8 +151,8 @@ def build_ssd(input_shape,
                      name='boxes7')
 
 
-    print(conv4._keras_shape)
-    print(boxes4._keras_shape)
+    #print(conv4._keras_shape)
+    #print(boxes4._keras_shape)
     anchors4 = Anchor(img_height, img_width, this_scale=scales[0], name='anchors4')(boxes4)
     anchors5 = Anchor(img_height, img_width, this_scale=scales[1], name='anchors5')(boxes5)
     anchors6 = Anchor(img_height, img_width, this_scale=scales[2], name='anchors6')(boxes6)
