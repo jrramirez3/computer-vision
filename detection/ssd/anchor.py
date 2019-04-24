@@ -64,7 +64,13 @@ class Anchor(Layer):
         boxes_tensor[:, :, :, 2] = wh_list[:, 0] # Set w
         boxes_tensor[:, :, :, 3] = wh_list[:, 1] # Set h
         # Convert `(cx, cy, w, h)` to `(xmin, xmax, ymin, ymax)`
-        boxes_tensor = convert_coordinates(boxes_tensor, start_index=0, conversion='centroids2corners')
+        # boxes_tensor = convert_coordinates(boxes_tensor, start_index=0, conversion='centroids2corners')
+        tensor1 = np.copy(boxes_tensor).astype(np.float)
+        tensor1[..., 0] = boxes_tensor[..., 0] - boxes_tensor[..., 2] / 2.0 # Set xmin
+        tensor1[..., 1] = boxes_tensor[..., 1] - boxes_tensor[..., 3] / 2.0 # Set ymin
+        tensor1[..., 2] = boxes_tensor[..., 0] + boxes_tensor[..., 2] / 2.0 # Set xmax
+        tensor1[..., 3] = boxes_tensor[..., 1] + boxes_tensor[..., 3] / 2.0 # Set ymax
+        boxes_tensor = tensor1
         return boxes_tensor
 
 
