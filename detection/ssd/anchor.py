@@ -65,12 +65,12 @@ class Anchor(Layer):
         boxes_tensor[:, :, :, 3] = wh_list[:, 1] # Set h
         # Convert `(cx, cy, w, h)` to `(xmin, xmax, ymin, ymax)`
         # boxes_tensor = convert_coordinates(boxes_tensor, start_index=0, conversion='centroids2corners')
-        tensor1 = np.copy(boxes_tensor).astype(np.float)
-        tensor1[..., 0] = boxes_tensor[..., 0] - boxes_tensor[..., 2] / 2.0 # Set xmin
-        tensor1[..., 1] = boxes_tensor[..., 1] - boxes_tensor[..., 3] / 2.0 # Set ymin
-        tensor1[..., 2] = boxes_tensor[..., 0] + boxes_tensor[..., 2] / 2.0 # Set xmax
-        tensor1[..., 3] = boxes_tensor[..., 1] + boxes_tensor[..., 3] / 2.0 # Set ymax
-        boxes_tensor = tensor1
+        tensor = np.copy(boxes_tensor).astype(np.float)
+        tensor[..., 0] = boxes_tensor[..., 0] - boxes_tensor[..., 2] / 2.0 # Set xmin
+        tensor[..., 1] = boxes_tensor[..., 1] - boxes_tensor[..., 3] / 2.0 # Set ymin
+        tensor[..., 2] = boxes_tensor[..., 0] + boxes_tensor[..., 2] / 2.0 # Set xmax
+        tensor[..., 3] = boxes_tensor[..., 1] + boxes_tensor[..., 3] / 2.0 # Set ymax
+        boxes_tensor = tensor
         # Now prepend one dimension to `boxes_tensor` to account for the batch size and tile it along
         # The result will be a 5D tensor of shape `(batch_size, feature_map_height, feature_map_width, n_boxes, 8)`
         boxes_tensor = np.expand_dims(boxes_tensor, axis=0)
