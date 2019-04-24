@@ -107,6 +107,8 @@ def build_ssd(input_shape,
               n_classes=4):
               
 
+    n_predictor_layers = 4
+    scales = np.linspace(0.1, 0.9, n_predictor_layers + 1)
     inputs = Input(shape=input_shape)
     conv4, conv5, conv6, conv7 = basenetwork(inputs)
 
