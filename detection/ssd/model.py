@@ -106,7 +106,7 @@ def build_basenetwork(input_shape,
 def build_ssd(input_shape,
               basenetwork,
               n_boxes=[3, 3, 3, 3],
-              n_classes=4):
+              n_classes=5):
               
 
     img_width, img_height, channels = input_shape
@@ -151,6 +151,8 @@ def build_ssd(input_shape,
                      name='boxes7')
 
 
+    print(conv4._keras_shape)
+    print(boxes4._keras_shape)
     anchors4 = Anchor(img_height, img_width, this_scale=scales[0], name='anchors4')(boxes4)
     anchors5 = Anchor(img_height, img_width, this_scale=scales[1], name='anchors5')(boxes5)
     anchors6 = Anchor(img_height, img_width, this_scale=scales[2], name='anchors6')(boxes6)

@@ -71,6 +71,10 @@ class Anchor(Layer):
         tensor1[..., 2] = boxes_tensor[..., 0] + boxes_tensor[..., 2] / 2.0 # Set xmax
         tensor1[..., 3] = boxes_tensor[..., 1] + boxes_tensor[..., 3] / 2.0 # Set ymax
         boxes_tensor = tensor1
+        # Now prepend one dimension to `boxes_tensor` to account for the batch size and tile it along
+        # The result will be a 5D tensor of shape `(batch_size, feature_map_height, feature_map_width, n_boxes, 8)`
+        boxes_tensor = np.expand_dims(boxes_tensor, axis=0)
+        boxes_tensor = K.tile(K.constant(boxes_tensor, dtype='float32'), (K.shape(x)[0], 1, 1, 1, 1))
         return boxes_tensor
 
 
