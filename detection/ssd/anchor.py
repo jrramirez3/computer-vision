@@ -33,7 +33,7 @@ class Anchor(Layer):
         super(Anchor, self).build(input_shape)  # Be sure to call this at the end
 
     def call(self, x):
-        boxes_tensor = anchor_boxes(x,
+        boxes_tensor = anchor_boxes(K.int_shape(x),
                                     self.img_height,
                                     self.img_width,
                                     self.this_scale,

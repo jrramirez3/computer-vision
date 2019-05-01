@@ -11,7 +11,7 @@ from keras import backend as K
 from tensorflow.keras.layers import Layer
 
 
-def anchor_boxes(x,
+def anchor_boxes(input_shape,
                  img_height,
                  img_width,
                  this_scale,
@@ -20,17 +20,13 @@ def anchor_boxes(x,
     size = min(img_height, img_width)
     wh_list = []
     for ar in aspect_ratios:
-        if (ar == 1):
-            box_height = box_width = this_scale * size
-            wh_list.append((box_width, box_height))
-        else:
-            box_height = this_scale * size / np.sqrt(ar)
-            box_width = this_scale * size * np.sqrt(ar)
-            wh_list.append((box_width, box_height))
+        box_height = this_scale * size / np.sqrt(ar)
+        box_width = this_scale * size * np.sqrt(ar)
+        wh_list.append((box_width, box_height))
 
     wh_list = np.array(wh_list)
 
-    batch_size, feature_map_height, feature_map_width, feature_map_channels = K.int_shape(x)
+    batch_size, feature_map_height, feature_map_width, feature_map_channels = input_shape # K.int_shape(x)
     step_height = img_height / feature_map_height
     step_width = img_width / feature_map_width
     offset_height = 0.5
@@ -62,7 +58,7 @@ def anchor_boxes(x,
     # boxes_tensor = convert_coordinates(boxes_tensor, start_index=0, conversion='centroids2corners')
     boxes_tensor = centroid2corners(boxes_tensor)
     # Now prepend one dimension to `boxes_tensor` to account for the batch size and tile it along
-    # The result will be a 5D tensor of shape `(batch_size, feature_map_height, feature_map_width, n_boxes, 8)`
+    # The result will be a 5D tensor of shape `(batch_size, feature_map_height, feature_map_width, n_boxes, 4)`
     boxes_tensor = np.expand_dims(boxes_tensor, axis=0)
     boxes_tensor = K.tile(K.constant(boxes_tensor, dtype='float32'), (K.shape(x)[0], 1, 1, 1, 1))
     return boxes_tensor
