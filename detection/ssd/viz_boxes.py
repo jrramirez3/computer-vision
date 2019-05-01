@@ -28,7 +28,7 @@ def show_anchors(image, input_shape, boxes):
     print(boxes[0][0][0][1])
     print(boxes[0][0][0][2])
     print(boxes.shape)
-    # Create a Rectangle patch
+    # Show grids
     delta_y = height // input_shape[1]
     for i in range(input_shape[1]):
         y = i * delta_y
@@ -42,19 +42,21 @@ def show_anchors(image, input_shape, boxes):
         ax.add_line(line)
 
     z = 0
-    for i in range(boxes.shape[1]):
-        for j in range(boxes.shape[2]):
-            color = colors[z%len(colors)]
-            z += 1
-            for k in range(boxes.shape[3]):
-                box = boxes[0][0][j][k]
-                x = box[0] - (box[2] * 0.5)
-                y = box[1] - (box[3] * 0.5)
-                w = box[2]
-                h = box[3]
-                rect = Rectangle((x, y), w, h, linewidth=1, edgecolor=color, facecolor='none')
-                #rect = Rectangle((200, 100),100,30, linewidth=1, edgecolor='r', facecolor='none')
-                ax.add_patch(rect)
+    a = boxes.shape[1] * boxes.shape[2] 
+    for _ in range(4):
+        i = np.random.randint(0, a, 1)[0] % boxes.shape[1]
+        j = np.random.randint(0, a, 1)[0] % boxes.shape[2]
+        color = colors[z%len(colors)]
+        z += 1
+        for k in range(boxes.shape[3]):
+            box = boxes[0][i][j][k]
+            x = box[0] - (box[2] * 0.5)
+            y = box[1] - (box[3] * 0.5)
+            w = box[2]
+            h = box[3]
+            rect = Rectangle((x, y), w, h, linewidth=1, edgecolor=color, facecolor='none')
+            #rect = Rectangle((200, 100),100,30, linewidth=1, edgecolor='r', facecolor='none')
+            ax.add_patch(rect)
     plt.show()
 
 if __name__ == '__main__':
@@ -80,7 +82,8 @@ if __name__ == '__main__':
                          img_height,
                          img_width,
                          this_scale,
-                         aspect_ratios)
+                         aspect_ratios,
+                         is_K_tensor=False)
 
 
     show_anchors(image, input_shape, boxes)

@@ -15,7 +15,8 @@ def anchor_boxes(input_shape,
                  img_height,
                  img_width,
                  this_scale,
-                 aspect_ratios):
+                 aspect_ratios,
+                 is_K_tensor=True):
     n_boxes = len(aspect_ratios)
     size = min(img_height, img_width)
     wh_list = []
@@ -62,8 +63,10 @@ def anchor_boxes(input_shape,
     # Now prepend one dimension to `boxes_tensor` to account for the batch size and tile it along
     # The result will be a 5D tensor of shape `(batch_size, feature_map_height, feature_map_width, n_boxes, 4)`
     boxes_tensor = np.expand_dims(boxes_tensor, axis=0)
-    # boxes_tensor = K.tile(K.constant(boxes_tensor, dtype='float32'), (input_shape[0], 1, 1, 1, 1))
-    boxes_tensor = np.tile(boxes_tensor, (input_shape[0], 1, 1, 1, 1))
+    if is_K_tensor:
+        boxes_tensor = K.tile(K.constant(boxes_tensor, dtype='float32'), (input_shape[0], 1, 1, 1, 1))
+    else:
+        boxes_tensor = np.tile(boxes_tensor, (input_shape[0], 1, 1, 1, 1))
     return boxes_tensor
 
 def centroid2corners(boxes_tensor):
