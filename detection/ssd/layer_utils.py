@@ -11,39 +11,38 @@ from keras import backend as K
 from tensorflow.keras.layers import Layer
 
 
-def anchor_boxes(input_shape,
-                 img_height,
-                 img_width,
-                 this_scale,
-                 aspect_ratios,
+def anchor_boxes(feature_shape,
+                 image_shape,
+                 sizes=[1.0, 0.75], 
+                 aspect_ratios=[1, 2, 0.5],
                  is_K_tensor=True):
-    n_boxes = len(aspect_ratios)
-    size = min(img_height, img_width)
+    
+    n_boxes = len(aspect_ratios) + len(sizes) - 1
+    image_height, image_width, _ = image_shape
+    batch_size, feature_height, feature_width, _ = feature_shape
+
+    grid_width = image_width / feature_width
+    grid_height = image_height / feature_height
+
     wh_list = []
     for ar in aspect_ratios:
-        box_height = this_scale * size / np.sqrt(ar)
-        box_width = this_scale * size * np.sqrt(ar)
+        box_height = grid_height * sizes[0] / np.sqrt(ar)
+        box_width = grid_width * sizes[0] * np.sqrt(ar)
+        wh_list.append((box_width, box_height))
+    for size in sizes[1:]:
+        box_height = grid_height * size
+        box_width = grid_width * size
         wh_list.append((box_width, box_height))
 
     wh_list = np.array(wh_list)
 
-    batch_size, feature_map_height, feature_map_width, feature_map_channels = input_shape # K.int_shape(x)
-    step_height = img_height / feature_map_height
-    step_width = img_width / feature_map_width
-    print(step_width)
-    offset_height = 0.5
-    offset_width = 0.5
-        
-    start = offset_height * step_height
-    end = (offset_height + feature_map_height - 1) * step_height
-    interval = feature_map_height
-    cy = np.linspace(start, end, interval)
+    start = grid_height * 0.5
+    end = (feature_height - 0.5) * grid_height
+    cy = np.linspace(start, end, feature_height)
 
-    start = offset_width * step_width
-    end = (offset_width + feature_map_width - 1) * step_width
-    interval = feature_map_width
-    cx = np.linspace(start, end, interval)
-    print(cx)
+    start = grid_width * 0.5 
+    end = (feature_width - 0.5) * grid_width
+    cx = np.linspace(start, end, feature_width)
 
     cx_grid, cy_grid = np.meshgrid(cx, cy)
     # This is necessary for np.tile() to do what we want further down
@@ -52,7 +51,7 @@ def anchor_boxes(input_shape,
     cy_grid = np.expand_dims(cy_grid, -1)
     # Create a 4D tensor template of shape `(feature_map_height, feature_map_width, n_boxes, 4)`
     # where the last dimension will contain `(cx, cy, w, h)`
-    boxes_tensor = np.zeros((feature_map_height, feature_map_width, n_boxes, 4))
+    boxes_tensor = np.zeros((feature_height, feature_width, n_boxes, 4))
     boxes_tensor[:, :, :, 0] = np.tile(cx_grid, (1, 1, n_boxes)) # Set cx
     boxes_tensor[:, :, :, 1] = np.tile(cy_grid, (1, 1, n_boxes)) # Set cy
     boxes_tensor[:, :, :, 2] = wh_list[:, 0] # Set w
@@ -64,9 +63,9 @@ def anchor_boxes(input_shape,
     # The result will be a 5D tensor of shape `(batch_size, feature_map_height, feature_map_width, n_boxes, 4)`
     boxes_tensor = np.expand_dims(boxes_tensor, axis=0)
     if is_K_tensor:
-        boxes_tensor = K.tile(K.constant(boxes_tensor, dtype='float32'), (input_shape[0], 1, 1, 1, 1))
+        boxes_tensor = K.tile(K.constant(boxes_tensor, dtype='float32'), (feature_shape[0], 1, 1, 1, 1))
     else:
-        boxes_tensor = np.tile(boxes_tensor, (input_shape[0], 1, 1, 1, 1))
+        boxes_tensor = np.tile(boxes_tensor, (feature_shape[0], 1, 1, 1, 1))
     return boxes_tensor
 
 def centroid2corners(boxes_tensor):

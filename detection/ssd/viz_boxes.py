@@ -16,11 +16,11 @@ from layer_utils import anchor_boxes
 import argparse
 
 
-def show_anchors(image, input_shape, boxes):
+def show_anchors(image, feature_shape, boxes):
     colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
-    # Create figure and axes
-    height = image.shape[0]
-    width = image.shape[1]
+    image_height, image_width, _ = image.shape
+    batch_size, feature_height, feature_width, _ = feature_shape
+
     fig, ax = plt.subplots(1)
     # Display the image
     ax.imshow(image)
@@ -29,16 +29,16 @@ def show_anchors(image, input_shape, boxes):
     print(boxes[0][0][0][2])
     print(boxes.shape)
     # Show grids
-    delta_y = height // input_shape[1]
-    for i in range(input_shape[1]):
-        y = i * delta_y
-        line = Line2D([0, width], [y, y])
+    grid_height = image_height // feature_height
+    for i in range(feature_height):
+        y = i * grid_height
+        line = Line2D([0, image_width], [y, y])
         ax.add_line(line)
 
-    delta_x = width // input_shape[2]
-    for i in range(input_shape[2]):
-        x = i * delta_x
-        line = Line2D([x, x], [0, height])
+    grid_width = image_width // feature_width
+    for i in range(feature_width):
+        x = i * grid_width
+        line = Line2D([x, x], [0, image_height])
         ax.add_line(line)
 
     z = 0
@@ -68,23 +68,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     image = skimage.img_as_float(imread(args.image))
-
-    img_height = image.shape[0]
-    img_width = image.shape[1]
-    input_shape = np.expand_dims(image, axis=0).shape
-    feature_height = input_shape[1] >> 6
-    feature_width = input_shape[2] >> 6 
-    input_shape = (1, feature_height, feature_width, input_shape[-1])
-    print(input_shape)
-    this_scale = 0.3
-    aspect_ratios = [0.5, 1.0, 2.0]
-    boxes = anchor_boxes(input_shape,
-                         img_height,
-                         img_width,
-                         this_scale,
-                         aspect_ratios,
+    feature_height = image.shape[0] >> 6
+    feature_width = image.shape[1] >> 6 
+    feature_shape = (1, feature_height, feature_width, image.shape[-1])
+    boxes = anchor_boxes(feature_shape,
+                         image.shape,
                          is_K_tensor=False)
 
-
-    show_anchors(image, input_shape, boxes)
+    show_anchors(image, feature_shape, boxes)
 
