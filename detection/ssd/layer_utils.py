@@ -38,7 +38,7 @@ def anchor_boxes(input_shape,
     cy = np.linspace(start, end, interval)
 
     start = offset_width * step_width
-    end = (offset_width + feature_map_width - 1)
+    end = (offset_width + feature_map_width - 1) * step_width
     interval = feature_map_width
     cx = np.linspace(start, end, interval)
 
@@ -56,11 +56,12 @@ def anchor_boxes(input_shape,
     boxes_tensor[:, :, :, 3] = wh_list[:, 1] # Set h
     # Convert `(cx, cy, w, h)` to `(xmin, xmax, ymin, ymax)`
     # boxes_tensor = convert_coordinates(boxes_tensor, start_index=0, conversion='centroids2corners')
-    boxes_tensor = centroid2corners(boxes_tensor)
+    # boxes_tensor = centroid2corners(boxes_tensor)
     # Now prepend one dimension to `boxes_tensor` to account for the batch size and tile it along
     # The result will be a 5D tensor of shape `(batch_size, feature_map_height, feature_map_width, n_boxes, 4)`
     boxes_tensor = np.expand_dims(boxes_tensor, axis=0)
-    boxes_tensor = K.tile(K.constant(boxes_tensor, dtype='float32'), (K.shape(x)[0], 1, 1, 1, 1))
+    # boxes_tensor = K.tile(K.constant(boxes_tensor, dtype='float32'), (input_shape[0], 1, 1, 1, 1))
+    boxes_tensor = np.tile(boxes_tensor, (input_shape[0], 1, 1, 1, 1))
     return boxes_tensor
 
 def centroid2corners(boxes_tensor):
