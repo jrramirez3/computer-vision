@@ -29,6 +29,7 @@ def anchor_boxes(input_shape,
     batch_size, feature_map_height, feature_map_width, feature_map_channels = input_shape # K.int_shape(x)
     step_height = img_height / feature_map_height
     step_width = img_width / feature_map_width
+    print(step_width)
     offset_height = 0.5
     offset_width = 0.5
         
@@ -41,6 +42,7 @@ def anchor_boxes(input_shape,
     end = (offset_width + feature_map_width - 1) * step_width
     interval = feature_map_width
     cx = np.linspace(start, end, interval)
+    print(cx)
 
     cx_grid, cy_grid = np.meshgrid(cx, cy)
     # This is necessary for np.tile() to do what we want further down
