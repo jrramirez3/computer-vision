@@ -14,6 +14,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.models import load_model
 from tensorflow.keras.layers import Concatenate
 from tensorflow.keras.utils import plot_model
+from keras import backend as K
 from anchor import Anchor
 
 import numpy as np
@@ -96,7 +97,7 @@ def build_basenetwork(input_shape,
                        48,
                        kernel_size=3,
                        postfix="7",
-                       use_maxpool=False)
+                       use_maxpool=True)
 
     basenetwork = Model(inputs, [conv4, conv5, conv6, conv7], name=name)
 
@@ -154,8 +155,6 @@ def build_ssd(input_shape,
                      name='boxes7')
 
 
-    #print(conv4._keras_shape)
-    #print(boxes4._keras_shape)
     anchors4 = Anchor(input_shape,
                       sizes=sizes,
                       aspect_ratios=aspect_ratios,
@@ -172,6 +171,14 @@ def build_ssd(input_shape,
                       sizes=sizes,
                       aspect_ratios=aspect_ratios,
                       name='anchors7')(boxes7)
+    print(K.int_shape(boxes4))
+    print(K.int_shape(anchors4))
+    print(K.int_shape(boxes5))
+    print(K.int_shape(anchors5))
+    print(K.int_shape(boxes6))
+    print(K.int_shape(anchors6))
+    print(K.int_shape(boxes7))
+    print(K.int_shape(anchors7))
 
 
     # Reshape the class predictions, yielding 3D tensors of shape `(batch, height * width * n_boxes, n_classes)`
