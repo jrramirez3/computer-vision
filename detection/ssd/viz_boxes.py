@@ -65,11 +65,13 @@ if __name__ == '__main__':
     parser.add_argument("--image", default='dataset/udacity_driving_datasets/1479506174991516375.jpg', help=help_)
     help_ = "CSV file with labels"
     parser.add_argument("--csv", default='dataset/udacity_driving_datasets/labels_train.csv', help=help_)
+    help_ = "Receptive field size factor"
+    parser.add_argument("--size", default=6, type=int, help=help_)
     args = parser.parse_args()
 
     image = skimage.img_as_float(imread(args.image))
-    feature_height = image.shape[0] >> 6
-    feature_width = image.shape[1] >> 6 
+    feature_height = image.shape[0] >> args.size
+    feature_width = image.shape[1] >> args.size
     feature_shape = (1, feature_height, feature_width, image.shape[-1])
     boxes = anchor_boxes(feature_shape,
                          image.shape,

@@ -15,17 +15,15 @@ from layer_utils import anchor_boxes
 class Anchor(Layer):
 
     def __init__(self,
-            img_width,
-            img_height,
-            this_scale,
-            aspect_ratios=[0.5, 1.0, 2.0],
+            image_shape,
+            sizes=[1.5, 0.75], 
+            aspect_ratios=[1, 2, 0.5],
             **kwargs):
 
-        self.img_height = img_height
-        self.img_width = img_width
-        self.this_scale = this_scale
+        self.image_shape = image_shape
+        self.sizes = sizes
         self.aspect_ratios = aspect_ratios
-        self.n_boxes = len(aspect_ratios)
+        self.n_boxes = len(aspect_ratios) + len(sizes) - 1
         super(Anchor, self).__init__(**kwargs)
 
     def build(self, input_shape):
@@ -33,14 +31,12 @@ class Anchor(Layer):
         super(Anchor, self).build(input_shape)  # Be sure to call this at the end
 
     def call(self, x):
-        boxes_tensor = anchor_boxes(K.int_shape(x),
-                                    self.img_height,
-                                    self.img_width,
-                                    self.this_scale,
-                                    self.aspect_ratios)
-        return boxes_tensor
-
+        return anchor_boxes(K.int_shape(x),
+                            self.image_shape,
+                            sizes=self.sizes,
+                            aspect_ratios=self.aspect_ratios,
+                            x=x)
 
     def compute_output_shape(self, input_shape):
-        batch_size, feature_map_height, feature_map_width, feature_map_channels = input_shape
-        return (batch_size, feature_map_height, feature_map_width, self.n_boxes, 4)
+        batch_size, feature_height, feature_width, feature_channels = input_shape
+        return (batch_size, feature_height, feature_width, self.n_boxes, 4)

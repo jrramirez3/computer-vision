@@ -7,14 +7,16 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
+import tensorflow as tf
 from keras import backend as K
 from tensorflow.keras.layers import Layer
 
 
 def anchor_boxes(feature_shape,
                  image_shape,
-                 sizes=[1.0, 0.75], 
+                 sizes=[1.5, 0.75], 
                  aspect_ratios=[1, 2, 0.5],
+                 x=None,
                  is_K_tensor=True):
     
     n_boxes = len(aspect_ratios) + len(sizes) - 1
@@ -58,12 +60,12 @@ def anchor_boxes(feature_shape,
     boxes_tensor[:, :, :, 3] = wh_list[:, 1] # Set h
     # Convert `(cx, cy, w, h)` to `(xmin, xmax, ymin, ymax)`
     # boxes_tensor = convert_coordinates(boxes_tensor, start_index=0, conversion='centroids2corners')
-    # boxes_tensor = centroid2corners(boxes_tensor)
     # Now prepend one dimension to `boxes_tensor` to account for the batch size and tile it along
     # The result will be a 5D tensor of shape `(batch_size, feature_map_height, feature_map_width, n_boxes, 4)`
     boxes_tensor = np.expand_dims(boxes_tensor, axis=0)
     if is_K_tensor:
-        boxes_tensor = K.tile(K.constant(boxes_tensor, dtype='float32'), (feature_shape[0], 1, 1, 1, 1))
+        # boxes_tensor = centroid2corners(boxes_tensor)
+        boxes_tensor = K.tile(K.constant(boxes_tensor, dtype='float32'), (K.shape(x)[0], 1, 1, 1, 1))
     else:
         boxes_tensor = np.tile(boxes_tensor, (feature_shape[0], 1, 1, 1, 1))
     return boxes_tensor

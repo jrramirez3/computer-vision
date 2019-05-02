@@ -105,58 +105,73 @@ def build_basenetwork(input_shape,
 
 def build_ssd(input_shape,
               basenetwork,
-              n_boxes=[3, 3, 3, 3],
+              sizes=[1.5, 0.75], 
+              aspect_ratios=[1, 2, 0.5],
               n_classes=5):
               
 
-    img_width, img_height, channels = input_shape
-    n_predictor_layers = 4
-    scales = np.linspace(0.1, 0.9, n_predictor_layers + 1)
+    n_boxes = len(aspect_ratios) + len(sizes) - 1
+    #image_width, image_height, channels = input_shape
+    #n_predictor_layers = 4
+    #scales = np.linspace(0.1, 0.9, n_predictor_layers + 1)
+
     inputs = Input(shape=input_shape)
     conv4, conv5, conv6, conv7 = basenetwork(inputs)
 
     classes4  = conv2d(conv4,
-                       n_boxes[0] * n_classes,
+                       n_boxes*n_classes,
                        kernel_size=3,
                        name='classes4')
     classes5  = conv2d(conv5,
-                       n_boxes[1] * n_classes,
+                       n_boxes*n_classes,
                        kernel_size=3,
                        name='classes5')
     classes6  = conv2d(conv6,
-                       n_boxes[2] * n_classes,
+                       n_boxes*n_classes,
                        kernel_size=3,
                        name='classes6')
     classes7  = conv2d(conv7,
-                       n_boxes[3] * n_classes,
+                       n_boxes*n_classes,
                        kernel_size=3,
                        name='classes7')
 
     # Output shape of `boxes`: `(batch, height, width, n_boxes * 4)`
     boxes4  = conv2d(conv4,
-                     n_boxes[0] * 4,
+                     n_boxes*4,
                      kernel_size=3,
                      name='boxes4')
     boxes5  = conv2d(conv5,
-                     n_boxes[1] * 4,
+                     n_boxes*4,
                      kernel_size=3,
                      name='boxes5')
     boxes6  = conv2d(conv6,
-                     n_boxes[2] * 4,
+                     n_boxes*4,
                      kernel_size=3,
                      name='boxes6')
     boxes7  = conv2d(conv7,
-                     n_boxes[3] * 4,
+                     n_boxes*4,
                      kernel_size=3,
                      name='boxes7')
 
 
     #print(conv4._keras_shape)
     #print(boxes4._keras_shape)
-    anchors4 = Anchor(img_height, img_width, this_scale=scales[0], name='anchors4')(boxes4)
-    anchors5 = Anchor(img_height, img_width, this_scale=scales[1], name='anchors5')(boxes5)
-    anchors6 = Anchor(img_height, img_width, this_scale=scales[2], name='anchors6')(boxes6)
-    anchors7 = Anchor(img_height, img_width, this_scale=scales[3], name='anchors7')(boxes7)
+    anchors4 = Anchor(input_shape,
+                      sizes=sizes,
+                      aspect_ratios=aspect_ratios,
+                      name='anchors4')(boxes4)
+    anchors5 = Anchor(input_shape,
+                      sizes=sizes,
+                      aspect_ratios=aspect_ratios,
+                      name='anchors5')(boxes5)
+    anchors6 = Anchor(input_shape,
+                      sizes=sizes,
+                      aspect_ratios=aspect_ratios,
+                      name='anchors6')(boxes6)
+    anchors7 = Anchor(input_shape,
+                      sizes=sizes,
+                      aspect_ratios=aspect_ratios,
+                      name='anchors7')(boxes7)
 
 
     # Reshape the class predictions, yielding 3D tensors of shape `(batch, height * width * n_boxes, n_classes)`
@@ -174,6 +189,7 @@ def build_ssd(input_shape,
     boxes7_reshaped = Reshape((-1, 4), name='boxes7_reshape')(boxes7)
 
 
+    # Reshape the anchor coordinate predictions, yielding 3D tensors of shape `(batch, height * width * n_boxes, 4)`
     anchors4_reshaped = Reshape((-1, 4), name='anchors4_reshape')(anchors4)
     anchors5_reshaped = Reshape((-1, 4), name='anchors5_reshape')(anchors5)
     anchors6_reshaped = Reshape((-1, 4), name='anchors6_reshape')(anchors6)
