@@ -15,15 +15,21 @@ from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
 from layer_utils import anchor_boxes
 import argparse
+import os
+from random import randint
 
+
+def box_color(index=None):
+    colors = ['b', 'y', 'w', 'r', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
+    if index is None:
+        return colors[randint(0, len(colors) - 1)]
+    return colors[index % len(colors)]
 
 def show_anchors(image, feature_shape, boxes):
-    colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
     image_height, image_width, _ = image.shape
     batch_size, feature_height, feature_width, _ = feature_shape
 
     fig, ax = plt.subplots(1)
-    # Display the image
     ax.imshow(image)
     # Show grids
     grid_height = image_height // feature_height
@@ -38,27 +44,39 @@ def show_anchors(image, feature_shape, boxes):
         line = Line2D([x, x], [0, image_height])
         ax.add_line(line)
 
-    z = 0
-    a = boxes.shape[1] * boxes.shape[2] 
-    for _ in range(4):
-        i = np.random.randint(0, a, 1)[0] % boxes.shape[1]
-        j = np.random.randint(0, a, 1)[0] % boxes.shape[2]
-        color = colors[z%len(colors)]
-        z += 1
-        for k in range(boxes.shape[3]):
-            box = boxes[0][i][j][k]
-            x = box[0] - (box[2] * 0.5)
-            y = box[1] - (box[3] * 0.5)
-            w = box[2]
-            h = box[3]
-            rect = Rectangle((x, y), w, h, linewidth=1, edgecolor=color, facecolor='none')
-            ax.add_patch(rect)
+    for i in range(boxes.shape[1]):
+        color = box_color()
+        for j in range(boxes.shape[2]):
+            for k in range(boxes.shape[3]):
+                box = boxes[0][i][j][k]
+                x = box[0] - (box[2] * 0.5)
+                y = box[1] - (box[3] * 0.5)
+                w = box[2]
+                h = box[3]
+                rect = Rectangle((x, y), w, h, linewidth=1, edgecolor=color, facecolor='none')
+                ax.add_patch(rect)
     plt.show()
+
+
+def show_labels(image, labels):
+    fig, ax = plt.subplots(1)
+    ax.imshow(image)
+    for label in labels:
+        w = label[1] - label[0]
+        h = label[3] - label[2]
+        x = label[0] #+ (w * 0.5)
+        y = label[2] #+ (h * 0.5)
+        category = int(label[4])
+        print(x,y,w,h)
+        rect = Rectangle((x, y), w, h, linewidth=1, edgecolor=box_color(category), facecolor='none')
+        ax.add_patch(rect)
+    plt.show()
+
 
 def loadcsv(path):
     data = []
-    with open(path) as csvfile:
-        rows = csv.reader(csvfile, delimiter=',')
+    with open(path) as csv_file:
+        rows = csv.reader(csv_file, delimiter=',')
         # rows = rows[1:]
         for row in rows:
             data.append(row)
@@ -71,46 +89,59 @@ def dict_label(labels, keys):
     for key in keys:
         boxes = []
         dic[key] = boxes
-        print(key)
+        #print(key)
     for label in labels:
         value = label[1:]
+        value = value.astype(np.float32)
         key = label[0]
         boxes = dic[key]
         boxes.append(value)
         dic[key] = boxes
-        print(boxes)
+        #print(boxes)
 
     return dic
 
 
-
 if __name__ == '__main__':
+    data_path = 'dataset/udacity_driving_datasets'
     parser = argparse.ArgumentParser()
     help_ = "Image to visualize"
-    parser.add_argument("--image", default='dataset/udacity_driving_datasets/1479506174991516375.jpg', help=help_)
-    help_ = "CSV file with labels"
-    parser.add_argument("--csv", default='dataset/udacity_driving_datasets/labels_train.csv', help=help_)
+    parser.add_argument("--image",
+                        default = '1479506174991516375.jpg',
+                        help=help_)
     help_ = "Receptive field size factor"
     parser.add_argument("--size", default=6, type=int, help=help_)
+    help_ = "Show anchors"
+    parser.add_argument("--anchors",
+                        default=False,
+                        action='store_true',
+                        help=help_)
+    help_ = "Show labels"
+    parser.add_argument("--labels",
+                        default=False,
+                        action='store_true',
+                        help=help_)
+    args = parser.parse_args()
     args = parser.parse_args()
 
-    image = skimage.img_as_float(imread(args.image))
-    feature_height = image.shape[0] >> args.size
-    feature_width = image.shape[1] >> args.size
-    feature_shape = (1, feature_height, feature_width, image.shape[-1])
-    boxes = anchor_boxes(feature_shape,
-                         image.shape,
-                         is_K_tensor=False)
+    image_path = os.path.join(data_path, args.image)
+    image = skimage.img_as_float(imread(image_path))
+ 
+    if args.anchors:
+        feature_height = image.shape[0] >> args.size
+        feature_width = image.shape[1] >> args.size
+        feature_shape = (1, feature_height, feature_width, image.shape[-1])
+        boxes = anchor_boxes(feature_shape,
+                             image.shape,
+                             is_K_tensor=False)
+        show_anchors(image, feature_shape, boxes)
 
-    # show_anchors(image, feature_shape, boxes)
-
-    labels = loadcsv(args.csv)
-    labels = labels[1:]
-    print(labels.shape)
-    keys = np.unique(labels[:,0])
-    print(labels[1])
-    print(keys[1])
-    print(keys.shape)
-    dic = dict_label(labels, keys)
-    print(dic[keys[0]])
-    print(dic[keys[1]])
+    if args.labels:
+        csv_file = os.path.join(data_path, 'labels_train.csv')
+        labels = loadcsv(csv_file)
+        labels = labels[1:]
+        keys = np.unique(labels[:,0])
+        dic = dict_label(labels, keys)
+        print(args.image)
+        print(dic[args.image])
+        show_labels(image, dic[args.image])
