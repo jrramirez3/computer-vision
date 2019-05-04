@@ -48,11 +48,13 @@ def show_anchors(image, feature_shape, boxes):
         color = box_color()
         for j in range(boxes.shape[2]):
             for k in range(boxes.shape[3]):
+                # default box format is cx, cy, w, h
                 box = boxes[0][i][j][k]
                 x = box[0] - (box[2] * 0.5)
                 y = box[1] - (box[3] * 0.5)
                 w = box[2]
                 h = box[3]
+                # Rectangle ((xmin, ymin), width, height) 
                 rect = Rectangle((x, y), w, h, linewidth=1, edgecolor=color, facecolor='none')
                 ax.add_patch(rect)
     plt.show()
@@ -62,12 +64,13 @@ def show_labels(image, labels):
     fig, ax = plt.subplots(1)
     ax.imshow(image)
     for label in labels:
+        # default label formal is xmin, xmax, ymin, ymax
         w = label[1] - label[0]
         h = label[3] - label[2]
         x = label[0] #+ (w * 0.5)
         y = label[2] #+ (h * 0.5)
         category = int(label[4])
-        print(x,y,w,h)
+        # Rectangle ((xmin, ymin), width, height) 
         rect = Rectangle((x, y), w, h, linewidth=1, edgecolor=box_color(category), facecolor='none')
         ax.add_patch(rect)
     plt.show()
