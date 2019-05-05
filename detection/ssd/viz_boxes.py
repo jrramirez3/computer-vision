@@ -25,7 +25,7 @@ def box_color(index=None):
         return colors[randint(0, len(colors) - 1)]
     return colors[index % len(colors)]
 
-def show_anchors(image, feature_shape, boxes):
+def show_anchors(image, feature_shape, boxes, which_anchors=None):
     image_height, image_width, _ = image.shape
     batch_size, feature_height, feature_width, _ = feature_shape
 
@@ -44,19 +44,26 @@ def show_anchors(image, feature_shape, boxes):
         line = Line2D([x, x], [0, image_height])
         ax.add_line(line)
 
-    for i in range(boxes.shape[1]):
+    rows = [i for i in range(boxes.shape[1])]
+    cols = [i for i in range(boxes.shape[2])]
+    for which_anchor in which_anchors:
+        i = which_anchor[0]
+        j = which_anchor[1]
+        if not j in rows:
+            continue
+        if not i in cols:
+            continue
         color = box_color()
-        for j in range(boxes.shape[2]):
-            for k in range(boxes.shape[3]):
-                # default box format is cx, cy, w, h
-                box = boxes[0][i][j][k]
-                x = box[0] - (box[2] * 0.5)
-                y = box[1] - (box[3] * 0.5)
-                w = box[2]
-                h = box[3]
-                # Rectangle ((xmin, ymin), width, height) 
-                rect = Rectangle((x, y), w, h, linewidth=1, edgecolor=color, facecolor='none')
-                ax.add_patch(rect)
+        for k in range(boxes.shape[3]):
+            # default box format is cx, cy, w, h
+            box = boxes[0][j][i][k]
+            x = box[0] - (box[2] * 0.5)
+            y = box[1] - (box[3] * 0.5)
+            w = box[2]
+            h = box[3]
+            # Rectangle ((xmin, ymin), width, height) 
+            rect = Rectangle((x, y), w, h, linewidth=1, edgecolor=color, facecolor='none')
+            ax.add_patch(rect)
     plt.show()
 
 
@@ -119,6 +126,11 @@ if __name__ == '__main__':
                         default=False,
                         action='store_true',
                         help=help_)
+
+    parser.add_argument('--which_anchors',
+                        nargs='*',
+                        help='<Required> Set flag')
+
     help_ = "Show labels"
     parser.add_argument("--labels",
                         default=False,
@@ -130,14 +142,18 @@ if __name__ == '__main__':
     image_path = os.path.join(data_path, args.image)
     image = skimage.img_as_float(imread(image_path))
  
-    if args.anchors:
+    if args.which_anchors is not None:
+        if len(args.which_anchors) % 2 != 0:
+            exit(0)
+        which_anchors = np.array(args.which_anchors).astype(np.uint8)
+        which_anchors = np.reshape(which_anchors, [-1, 2])
         feature_height = image.shape[0] >> args.size
         feature_width = image.shape[1] >> args.size
         feature_shape = (1, feature_height, feature_width, image.shape[-1])
         boxes = anchor_boxes(feature_shape,
                              image.shape,
                              is_K_tensor=False)
-        show_anchors(image, feature_shape, boxes)
+        show_anchors(image, feature_shape, boxes, which_anchors)
 
     if args.labels:
         csv_file = os.path.join(data_path, 'labels_train.csv')

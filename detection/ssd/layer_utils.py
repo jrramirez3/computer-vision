@@ -12,9 +12,6 @@ from keras import backend as K
 from tensorflow.keras.layers import Layer
 
 
-def iou():
-    return
-
 def anchor_boxes(feature_shape,
                  image_shape,
                  sizes=[1.5, 0.75], 
@@ -80,3 +77,55 @@ def centroid2corners(boxes_tensor):
     tensor[..., 2] = boxes_tensor[..., 0] + boxes_tensor[..., 2] / 2.0 # Set xmax
     tensor[..., 3] = boxes_tensor[..., 1] + boxes_tensor[..., 3] / 2.0 # Set ymax
     return tensor
+
+def intersection(boxes1, boxes2):
+    m = boxes1.shape[0] # The number of boxes in `boxes1`
+    n = boxes2.shape[0] # The number of boxes in `boxes2`
+
+    xmin = 0
+    xmax = 1
+    ymin = 2
+    ymax = 3
+
+    boxes1_min = np.expand_dims(boxes1[:, [xmin, ymin]], axis=1)
+    boxes1_min = np.tile(boxes1_min, reps=(1, n, 1))
+    boxes2_min = np.expand_dims(boxes2[:, [xmin, ymin]], axis=0)
+    boxes2_min = np.tile(boxes2_min, reps=(m, 1, 1))
+    min_xy = np.maximum(boxes1_min, boxes2_min)
+
+    boxes1_max = np.expand_dims(boxes1[:, [xmax, ymax]], axis=1)
+    boxes1_max = np.tile(boxes1_max, reps=(1, n, 1))
+    boxes2_max = np.expand_dims(boxes2[:, [xmax, ymax]], axis=0)
+    boxes2_max = np.tile(boxes2_max, reps=(m, 1, 1))
+    max_xy = np.minimum(boxes1_max, boxes2_max)
+
+    side_lengths = np.maximum(0, max_xy - min_xy + d)
+
+    intersection_areas = side_lengths[:, :, 0] * side_lengths[:, :, 1]
+    return intersection_areas
+
+
+def union(boxes1, boxes2, intersection_areas):
+    m = boxes1.shape[0] # The number of boxes in `boxes1`
+    n = boxes2.shape[0] # The number of boxes in `boxes2`
+
+    xmin = 0
+    xmax = 1
+    ymin = 2
+    ymax = 3
+
+    areas = (boxes1[:, xmax] - boxes1[:, xmin]) * (boxes1[:, ymax] - boxes1[:, ymin])
+    areas = (boxes1[:, xmax] - boxes1[:, xmin]) * (boxes1[:, ymax] - boxes1[:, ymin])
+    areas = (boxes1[:, xmax] - boxes1[:, xmin]) * (boxes1[:, ymax] - boxes1[:, ymin])
+    boxes1_areas = np.tile(np.expand_dims(areas, axis=1), reps=(1,n))
+    areas = (boxes2[:,xmax] - boxes2[:,xmin]) * (boxes2[:,ymax] - boxes2[:,ymin])
+    boxes2_areas = np.tile(np.expand_dims(areas, axis=0), reps=(m,1))
+
+    union_areas = boxes1_areas + boxes2_areas - intersection_areas
+    return union_areas
+
+
+def iou(boxes1, boxes2):
+    intersection_areas = intersection(boxes1, boxes2)
+    union_areas = union(boxes1, boxes2, intersection_areas)
+    return intersection_areas / union_areas
