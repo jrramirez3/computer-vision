@@ -26,7 +26,13 @@ def box_color(index=None):
         return colors[randint(0, len(colors) - 1)]
     return colors[index % len(colors)]
 
-def show_anchors(image, feature_shape, boxes, which_anchors=None, labels=None, show_grids=False, ious=None):
+def show_anchors(image,
+                 feature_shape,
+                 boxes,
+                 maxiou_indexes=None,
+                 maxiou_per_gt=None,
+                 labels=None,
+                 show_grids=False):
     image_height, image_width, _ = image.shape
     batch_size, feature_height, feature_width, _ = feature_shape
 
@@ -49,10 +55,10 @@ def show_anchors(image, feature_shape, boxes, which_anchors=None, labels=None, s
     #rows = [i for i in range(boxes.shape[1])]
     #cols = [i for i in range(boxes.shape[2])]
     #anchors = [i for i in range(boxes.shape[3])]
-    for index in range(which_anchors.shape[1]):
-        i = which_anchors[1][index]
-        j = which_anchors[2][index]
-        k = which_anchors[3][index]
+    for index in range(maxiou_indexes.shape[1]):
+        i = maxiou_indexes[1][index]
+        j = maxiou_indexes[2][index]
+        k = maxiou_indexes[3][index]
         color = box_color()
         # default label formal is xmin, xmax, ymin, ymax
         box = boxes[0][i][j][k]
@@ -66,8 +72,8 @@ def show_anchors(image, feature_shape, boxes, which_anchors=None, labels=None, s
         dxmax = box[1] - label[1]
         dymin = box[2] - label[2]
         dymax = box[3] - label[3]
-        iou = np.amax(ious[index])
-        print(iou, ": ", dxmin, dxmax, dymin, dymax)
+        iou = np.amax(maxiou_per_gt[index])
+        print("label: ", label[4], iou, dxmin, dxmax, dymin, dymax)
         
         rect = Rectangle((x, y), w, h, linewidth=1, edgecolor='c', facecolor='none')
         ax.add_patch(rect)
@@ -150,7 +156,7 @@ if __name__ == '__main__':
                         action='store_true',
                         help=help_)
 
-    parser.add_argument('--which_anchors',
+    parser.add_argument('--maxiou_indexes',
                         nargs='*',
                         help='<Required> Set flag')
 
@@ -165,17 +171,17 @@ if __name__ == '__main__':
     image_path = os.path.join(data_path, args.image)
     image = skimage.img_as_float(imread(image_path))
 
-    which_anchors = None
+    maxiou_indexes = None
     ax = None
-    if args.which_anchors is not None:
-        if len(args.which_anchors) % 2 != 0:
+    if args.maxiou_indexes is not None:
+        if len(args.maxiou_indexes) % 2 != 0:
             exit(0)
-        which_anchors = np.array(args.which_anchors).astype(np.uint8)
-        which_anchors = np.reshape(which_anchors, [-1, 2])
+        maxiou_indexes = np.array(args.maxiou_indexes).astype(np.uint8)
+        maxiou_indexes = np.reshape(maxiou_indexes, [-1, 2])
  
         feature_shape, boxes = feature_boxes(image, args.size)
-        _, ax = show_anchors(image, feature_shape, boxes, which_anchors, args.labels)
-        print("Orig boxes shape ", boxes.shape)
+        #_, ax = show_anchors(image, feature_shape, boxes, maxiou_per_gt, args.labels)
+        #print("Orig boxes shape ", boxes.shape)
 
     if args.labels:
         csv_file = os.path.join(data_path, 'labels_train.csv')
@@ -183,8 +189,8 @@ if __name__ == '__main__':
         labels = labels[1:]
         keys = np.unique(labels[:,0])
         dic = dict_label(labels, keys)
-        # print(args.image)
-        labels = labels2show = dic[args.image]
+        labels = dic[args.image]
+        print(labels)
 
         labels_category = np.array(labels)
         labels = labels_category[:,0:-1]
@@ -193,12 +199,18 @@ if __name__ == '__main__':
         reshaped_boxes = np.reshape(boxes, [-1, 4])
         anchors_array_shape = boxes.shape[0:4]
         print("Labels shape ", labels.shape)
-        print("Boxes shape ", reshaped_boxes.shape)
+        print("Boxes shape ", boxes.shape)
         print("Anchors array shape ", anchors_array_shape)
 
         iou = layer_utils.iou(reshaped_boxes, labels)
-        print(iou.shape)
-        print(np.amax(iou))
-        maxiou_per_gt, maxiou_indexes = layer_utils.maxiou(iou, anchors_array_shape)
-        _, ax = show_anchors(image, feature_shape, boxes, maxiou_indexes, labels, show_grids=False, ious=maxiou_per_gt)
+        print("IOU array shape:", iou.shape)
+        maxiou_per_gt, maxiou_indexes = layer_utils.maxiou(iou,
+                                                           anchors_array_shape)
+        _, ax = show_anchors(image,
+                             feature_shape,
+                             boxes,
+                             maxiou_indexes=maxiou_indexes,
+                             maxiou_per_gt=maxiou_per_gt,
+                             labels=labels_category,
+                             show_grids=False)
         show_labels(image, labels_category, ax)
