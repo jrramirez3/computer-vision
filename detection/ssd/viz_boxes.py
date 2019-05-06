@@ -20,12 +20,12 @@ from random import randint
 
 
 def box_color(index=None):
-    colors = ['b', 'y', 'w', 'r', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
+    colors = ['b', 'y', 'w', 'r', 'g', 'c', 'm', 'k']
     if index is None:
         return colors[randint(0, len(colors) - 1)]
     return colors[index % len(colors)]
 
-def show_anchors(image, feature_shape, boxes, which_anchors=None):
+def show_anchors(image, feature_shape, boxes, which_anchors=None, labels=False):
     image_height, image_width, _ = image.shape
     batch_size, feature_height, feature_width, _ = feature_shape
 
@@ -62,14 +62,19 @@ def show_anchors(image, feature_shape, boxes, which_anchors=None):
             w = box[2]
             h = box[3]
             # Rectangle ((xmin, ymin), width, height) 
-            rect = Rectangle((x, y), w, h, linewidth=1, edgecolor=color, facecolor='none')
+            rect = Rectangle((x, y), w, h, linewidth=1, edgecolor='c', facecolor='none')
             ax.add_patch(rect)
-    plt.show()
+
+    if not labels:
+        plt.show()
+
+    return fig, ax
 
 
-def show_labels(image, labels):
-    fig, ax = plt.subplots(1)
-    ax.imshow(image)
+def show_labels(image, labels, ax=None):
+    if ax is None:
+        fig, ax = plt.subplots(1)
+        ax.imshow(image)
     for label in labels:
         # default label formal is xmin, xmax, ymin, ymax
         w = label[1] - label[0]
@@ -141,19 +146,22 @@ if __name__ == '__main__':
 
     image_path = os.path.join(data_path, args.image)
     image = skimage.img_as_float(imread(image_path))
- 
+
+    which_anchors = None
+    ax = None
     if args.which_anchors is not None:
         if len(args.which_anchors) % 2 != 0:
             exit(0)
         which_anchors = np.array(args.which_anchors).astype(np.uint8)
         which_anchors = np.reshape(which_anchors, [-1, 2])
+ 
         feature_height = image.shape[0] >> args.size
         feature_width = image.shape[1] >> args.size
         feature_shape = (1, feature_height, feature_width, image.shape[-1])
         boxes = anchor_boxes(feature_shape,
                              image.shape,
                              is_K_tensor=False)
-        show_anchors(image, feature_shape, boxes, which_anchors)
+        _, ax = show_anchors(image, feature_shape, boxes, which_anchors, args.labels)
 
     if args.labels:
         csv_file = os.path.join(data_path, 'labels_train.csv')
@@ -163,4 +171,4 @@ if __name__ == '__main__':
         dic = dict_label(labels, keys)
         print(args.image)
         print(dic[args.image])
-        show_labels(image, dic[args.image])
+        show_labels(image, dic[args.image], ax)
