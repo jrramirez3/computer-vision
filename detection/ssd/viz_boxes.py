@@ -49,10 +49,10 @@ def show_anchors(image, feature_shape, boxes, which_anchors=None, labels=False, 
     #rows = [i for i in range(boxes.shape[1])]
     #cols = [i for i in range(boxes.shape[2])]
     #anchors = [i for i in range(boxes.shape[3])]
-    for index in range(np.array(which_anchors).shape[1]):
-        i = which_anchors[0][index]
-        j = which_anchors[1][index]
-        k = which_anchors[2][index]
+    for index in range(which_anchors.shape[1]):
+        i = which_anchors[1][index]
+        j = which_anchors[2][index]
+        k = which_anchors[3][index]
         color = box_color()
         # default label formal is xmin, xmax, ymin, ymax
         box = boxes[0][i][j][k]
@@ -183,7 +183,7 @@ if __name__ == '__main__':
 
         feature_shape, boxes = feature_boxes(image, args.size)
         reshaped_boxes = np.reshape(boxes, [-1, 4])
-        anchors_array_shape = boxes.shape[1:4]
+        anchors_array_shape = boxes.shape[0:4]
         print("Labels shape ", labels.shape)
         print("Boxes shape ", reshaped_boxes.shape)
         print("Anchors array shape ", anchors_array_shape)
@@ -192,6 +192,5 @@ if __name__ == '__main__':
         print(iou.shape)
         print(np.amax(iou))
         maxiou_indexes = layer_utils.maxiou(iou, anchors_array_shape)
-
         _, ax = show_anchors(image, feature_shape, boxes, maxiou_indexes, args.labels)
         show_labels(image, labels_category, ax)
