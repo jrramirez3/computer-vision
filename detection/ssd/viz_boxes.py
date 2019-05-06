@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
 from layer_utils import anchor_boxes
+import layer_utils
 import argparse
 import os
 from random import randint
@@ -57,10 +58,14 @@ def show_anchors(image, feature_shape, boxes, which_anchors=None, labels=False):
         for k in range(boxes.shape[3]):
             # default box format is cx, cy, w, h
             box = boxes[0][j][i][k]
-            x = box[0] - (box[2] * 0.5)
-            y = box[1] - (box[3] * 0.5)
-            w = box[2]
-            h = box[3]
+            #x = box[0] - (box[2] * 0.5)
+            #y = box[1] - (box[3] * 0.5)
+            #w = box[2]
+            #h = box[3]
+            w = box[1] - box[0]
+            h = box[3] - box[2]
+            x = box[0] #+ (w * 0.5)
+            y = box[2] #+ (h * 0.5)
             # Rectangle ((xmin, ymin), width, height) 
             rect = Rectangle((x, y), w, h, linewidth=1, edgecolor='c', facecolor='none')
             ax.add_patch(rect)
@@ -162,6 +167,8 @@ if __name__ == '__main__':
                              image.shape,
                              is_K_tensor=False)
         _, ax = show_anchors(image, feature_shape, boxes, which_anchors, args.labels)
+        print("Orig boxes shape ", boxes.shape)
+        boxes = np.reshape(boxes, [-1, 4])
 
     if args.labels:
         csv_file = os.path.join(data_path, 'labels_train.csv')
@@ -169,6 +176,17 @@ if __name__ == '__main__':
         labels = labels[1:]
         keys = np.unique(labels[:,0])
         dic = dict_label(labels, keys)
-        print(args.image)
-        print(dic[args.image])
-        show_labels(image, dic[args.image], ax)
+        # print(args.image)
+        labels = dic[args.image]
+        show_labels(image, labels, ax)
+        labels = np.array(labels)
+        labels = labels[:,0:-1]
+
+        if boxes is not None:
+            print("Labels shape ", labels.shape)
+            print("Boxes shape ", boxes.shape)
+
+            iou = layer_utils.iou(boxes, labels)
+            print(iou.shape)
+            print(np.amax(iou))
+

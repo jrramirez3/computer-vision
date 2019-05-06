@@ -62,19 +62,19 @@ def anchor_boxes(feature_shape,
     # boxes_tensor = convert_coordinates(boxes_tensor, start_index=0, conversion='centroids2corners')
     # Now prepend one dimension to `boxes_tensor` to account for the batch size and tile it along
     # The result will be a 5D tensor of shape `(batch_size, feature_map_height, feature_map_width, n_boxes, 4)`
+    boxes_tensor = centroid2minmax(boxes_tensor)
     boxes_tensor = np.expand_dims(boxes_tensor, axis=0)
     if is_K_tensor:
-        # boxes_tensor = centroid2corners(boxes_tensor)
         boxes_tensor = K.tile(K.constant(boxes_tensor, dtype='float32'), (K.shape(x)[0], 1, 1, 1, 1))
     else:
         boxes_tensor = np.tile(boxes_tensor, (feature_shape[0], 1, 1, 1, 1))
     return boxes_tensor
 
-def centroid2corners(boxes_tensor):
+def centroid2minmax(boxes_tensor):
     tensor = np.copy(boxes_tensor).astype(np.float)
     tensor[..., 0] = boxes_tensor[..., 0] - boxes_tensor[..., 2] / 2.0 # Set xmin
-    tensor[..., 1] = boxes_tensor[..., 1] - boxes_tensor[..., 3] / 2.0 # Set ymin
-    tensor[..., 2] = boxes_tensor[..., 0] + boxes_tensor[..., 2] / 2.0 # Set xmax
+    tensor[..., 1] = boxes_tensor[..., 0] + boxes_tensor[..., 2] / 2.0 # Set xmax
+    tensor[..., 2] = boxes_tensor[..., 1] - boxes_tensor[..., 3] / 2.0 # Set ymin
     tensor[..., 3] = boxes_tensor[..., 1] + boxes_tensor[..., 3] / 2.0 # Set ymax
     return tensor
 
@@ -99,7 +99,7 @@ def intersection(boxes1, boxes2):
     boxes2_max = np.tile(boxes2_max, reps=(m, 1, 1))
     max_xy = np.minimum(boxes1_max, boxes2_max)
 
-    side_lengths = np.maximum(0, max_xy - min_xy + d)
+    side_lengths = np.maximum(0, max_xy - min_xy)
 
     intersection_areas = side_lengths[:, :, 0] * side_lengths[:, :, 1]
     return intersection_areas
