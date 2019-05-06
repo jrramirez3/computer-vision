@@ -26,7 +26,7 @@ def box_color(index=None):
         return colors[randint(0, len(colors) - 1)]
     return colors[index % len(colors)]
 
-def show_anchors(image, feature_shape, boxes, which_anchors=None, labels=False, show_grids=False):
+def show_anchors(image, feature_shape, boxes, which_anchors=None, labels=None, show_grids=False, ious=None):
     image_height, image_width, _ = image.shape
     batch_size, feature_height, feature_width, _ = feature_shape
 
@@ -56,15 +56,23 @@ def show_anchors(image, feature_shape, boxes, which_anchors=None, labels=False, 
         color = box_color()
         # default label formal is xmin, xmax, ymin, ymax
         box = boxes[0][i][j][k]
+        label = labels[index]
         w = box[1] - box[0]
         h = box[3] - box[2]
         x = box[0]
         y = box[2]
         # Rectangle ((xmin, ymin), width, height) 
+        dxmin = box[0] - label[0]
+        dxmax = box[1] - label[1]
+        dymin = box[2] - label[2]
+        dymax = box[3] - label[3]
+        iou = np.amax(ious[index])
+        print(iou, ": ", dxmin, dxmax, dymin, dymax)
+        
         rect = Rectangle((x, y), w, h, linewidth=1, edgecolor='c', facecolor='none')
         ax.add_patch(rect)
 
-    if not labels:
+    if labels is None:
         plt.show()
 
     return fig, ax
@@ -191,6 +199,6 @@ if __name__ == '__main__':
         iou = layer_utils.iou(reshaped_boxes, labels)
         print(iou.shape)
         print(np.amax(iou))
-        maxiou_indexes = layer_utils.maxiou(iou, anchors_array_shape)
-        _, ax = show_anchors(image, feature_shape, boxes, maxiou_indexes, args.labels)
+        maxiou_per_gt, maxiou_indexes = layer_utils.maxiou(iou, anchors_array_shape)
+        _, ax = show_anchors(image, feature_shape, boxes, maxiou_indexes, labels, show_grids=False, ious=maxiou_per_gt)
         show_labels(image, labels_category, ax)

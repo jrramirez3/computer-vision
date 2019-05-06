@@ -133,8 +133,7 @@ def iou(boxes1, boxes2):
 
 
 def maxiou(iou, anchors_array_shape):
-    max_per_gt = np.argmax(iou, axis=0)
-    indexes = np.array(np.unravel_index(max_per_gt, anchors_array_shape))
-    print(indexes)
-    print(indexes.shape)
-    return indexes
+    maxiou_per_gt = np.argmax(iou, axis=0)
+    indexes = np.array(np.unravel_index(maxiou_per_gt, anchors_array_shape))
+    maxiou_per_gt = iou[maxiou_per_gt]
+    return maxiou_per_gt, indexes
