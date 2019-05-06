@@ -56,6 +56,9 @@ def show_anchors(image,
     #cols = [i for i in range(boxes.shape[2])]
     #anchors = [i for i in range(boxes.shape[3])]
     for index in range(maxiou_indexes.shape[1]):
+        iou = np.amax(maxiou_per_gt[index])
+        #if iou < 0.2:
+        #    continue
         i = maxiou_indexes[1][index]
         j = maxiou_indexes[2][index]
         k = maxiou_indexes[3][index]
@@ -72,8 +75,7 @@ def show_anchors(image,
         dxmax = box[1] - label[1]
         dymin = box[2] - label[2]
         dymax = box[3] - label[3]
-        iou = np.amax(maxiou_per_gt[index])
-        print("label: ", label[4], iou, dxmin, dxmax, dymin, dymax)
+        print(index, ":", label[4], iou, dxmin, dxmax, dymin, dymax)
         
         rect = Rectangle((x, y), w, h, linewidth=1, edgecolor='c', facecolor='none')
         ax.add_patch(rect)
