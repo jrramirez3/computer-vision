@@ -26,49 +26,43 @@ def box_color(index=None):
         return colors[randint(0, len(colors) - 1)]
     return colors[index % len(colors)]
 
-def show_anchors(image, feature_shape, boxes, which_anchors=None, labels=False):
+def show_anchors(image, feature_shape, boxes, which_anchors=None, labels=False, show_grids=False):
     image_height, image_width, _ = image.shape
     batch_size, feature_height, feature_width, _ = feature_shape
 
     fig, ax = plt.subplots(1)
     ax.imshow(image)
-    # Show grids
-    grid_height = image_height // feature_height
-    for i in range(feature_height):
-        y = i * grid_height
-        line = Line2D([0, image_width], [y, y])
-        ax.add_line(line)
+    if show_grids:
+        # Show grids
+        grid_height = image_height // feature_height
+        for i in range(feature_height):
+            y = i * grid_height
+            line = Line2D([0, image_width], [y, y])
+            ax.add_line(line)
 
-    grid_width = image_width // feature_width
-    for i in range(feature_width):
-        x = i * grid_width
-        line = Line2D([x, x], [0, image_height])
-        ax.add_line(line)
+        grid_width = image_width // feature_width
+        for i in range(feature_width):
+            x = i * grid_width
+            line = Line2D([x, x], [0, image_height])
+            ax.add_line(line)
 
-    rows = [i for i in range(boxes.shape[1])]
-    cols = [i for i in range(boxes.shape[2])]
-    for which_anchor in which_anchors:
-        i = which_anchor[0]
-        j = which_anchor[1]
-        if not j in rows:
-            continue
-        if not i in cols:
-            continue
+    #rows = [i for i in range(boxes.shape[1])]
+    #cols = [i for i in range(boxes.shape[2])]
+    #anchors = [i for i in range(boxes.shape[3])]
+    for index in range(np.array(which_anchors).shape[1]):
+        i = which_anchors[0][index]
+        j = which_anchors[1][index]
+        k = which_anchors[2][index]
         color = box_color()
-        for k in range(boxes.shape[3]):
-            # default box format is cx, cy, w, h
-            box = boxes[0][j][i][k]
-            #x = box[0] - (box[2] * 0.5)
-            #y = box[1] - (box[3] * 0.5)
-            #w = box[2]
-            #h = box[3]
-            w = box[1] - box[0]
-            h = box[3] - box[2]
-            x = box[0] #+ (w * 0.5)
-            y = box[2] #+ (h * 0.5)
-            # Rectangle ((xmin, ymin), width, height) 
-            rect = Rectangle((x, y), w, h, linewidth=1, edgecolor='c', facecolor='none')
-            ax.add_patch(rect)
+        # default label formal is xmin, xmax, ymin, ymax
+        box = boxes[0][i][j][k]
+        w = box[1] - box[0]
+        h = box[3] - box[2]
+        x = box[0]
+        y = box[2]
+        # Rectangle ((xmin, ymin), width, height) 
+        rect = Rectangle((x, y), w, h, linewidth=1, edgecolor='c', facecolor='none')
+        ax.add_patch(rect)
 
     if not labels:
         plt.show()
@@ -84,8 +78,8 @@ def show_labels(image, labels, ax=None):
         # default label formal is xmin, xmax, ymin, ymax
         w = label[1] - label[0]
         h = label[3] - label[2]
-        x = label[0] #+ (w * 0.5)
-        y = label[2] #+ (h * 0.5)
+        x = label[0]
+        y = label[2]
         category = int(label[4])
         # Rectangle ((xmin, ymin), width, height) 
         rect = Rectangle((x, y), w, h, linewidth=1, edgecolor=box_color(category), facecolor='none')
@@ -120,6 +114,17 @@ def dict_label(labels, keys):
         #print(boxes)
 
     return dic
+
+def feature_boxes(image, size):
+    feature_height = image.shape[0] >> size
+    feature_width = image.shape[1] >> size
+    feature_shape = (1, feature_height, feature_width, image.shape[-1])
+    boxes = anchor_boxes(feature_shape,
+                         image.shape,
+                         is_K_tensor=False)
+    #print("Orig boxes shape ", boxes.shape)
+    #boxes = np.reshape(boxes, [-1, 4])
+    return feature_shape, boxes
 
 
 if __name__ == '__main__':
@@ -160,15 +165,9 @@ if __name__ == '__main__':
         which_anchors = np.array(args.which_anchors).astype(np.uint8)
         which_anchors = np.reshape(which_anchors, [-1, 2])
  
-        feature_height = image.shape[0] >> args.size
-        feature_width = image.shape[1] >> args.size
-        feature_shape = (1, feature_height, feature_width, image.shape[-1])
-        boxes = anchor_boxes(feature_shape,
-                             image.shape,
-                             is_K_tensor=False)
+        feature_shape, boxes = feature_boxes(image, args.size)
         _, ax = show_anchors(image, feature_shape, boxes, which_anchors, args.labels)
         print("Orig boxes shape ", boxes.shape)
-        boxes = np.reshape(boxes, [-1, 4])
 
     if args.labels:
         csv_file = os.path.join(data_path, 'labels_train.csv')
@@ -177,16 +176,22 @@ if __name__ == '__main__':
         keys = np.unique(labels[:,0])
         dic = dict_label(labels, keys)
         # print(args.image)
-        labels = dic[args.image]
-        show_labels(image, labels, ax)
-        labels = np.array(labels)
-        labels = labels[:,0:-1]
+        labels = labels2show = dic[args.image]
 
-        if boxes is not None:
-            print("Labels shape ", labels.shape)
-            print("Boxes shape ", boxes.shape)
+        labels_category = np.array(labels)
+        labels = labels_category[:,0:-1]
 
-            iou = layer_utils.iou(boxes, labels)
-            print(iou.shape)
-            print(np.amax(iou))
+        feature_shape, boxes = feature_boxes(image, args.size)
+        reshaped_boxes = np.reshape(boxes, [-1, 4])
+        anchors_array_shape = boxes.shape[1:4]
+        print("Labels shape ", labels.shape)
+        print("Boxes shape ", reshaped_boxes.shape)
+        print("Anchors array shape ", anchors_array_shape)
 
+        iou = layer_utils.iou(reshaped_boxes, labels)
+        print(iou.shape)
+        print(np.amax(iou))
+        maxiou_indexes = layer_utils.maxiou(iou, anchors_array_shape)
+
+        _, ax = show_anchors(image, feature_shape, boxes, maxiou_indexes, args.labels)
+        show_labels(image, labels_category, ax)

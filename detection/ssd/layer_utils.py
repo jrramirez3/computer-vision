@@ -14,7 +14,8 @@ from tensorflow.keras.layers import Layer
 
 def anchor_boxes(feature_shape,
                  image_shape,
-                 sizes=[1.5, 0.75], 
+                 sizes=[1.2, 0.75], 
+                 #sizes=[0.9, 0.2], 
                  aspect_ratios=[1, 2, 0.5],
                  x=None,
                  is_K_tensor=True):
@@ -129,3 +130,11 @@ def iou(boxes1, boxes2):
     intersection_areas = intersection(boxes1, boxes2)
     union_areas = union(boxes1, boxes2, intersection_areas)
     return intersection_areas / union_areas
+
+
+def maxiou(iou, anchors_array_shape):
+    max_per_gt = np.argmax(iou, axis=0)
+    indexes = np.unravel_index(max_per_gt, anchors_array_shape)
+    print(indexes)
+    print(np.array(indexes).shape)
+    return indexes
