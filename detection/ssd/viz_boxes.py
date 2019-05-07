@@ -22,7 +22,7 @@ from random import randint
 
 
 def box_color(index=None):
-    colors = ['b', 'y', 'w', 'r', 'g', 'c', 'm', 'k']
+    colors = ['b', 'y', 'w', 'g', 'c', 'r', 'g', 'c', 'm', 'k']
     if index is None:
         return colors[randint(0, len(colors) - 1)]
     return colors[index % len(colors)]
@@ -54,29 +54,30 @@ def show_anchors(image,
 
     # maxiou_indexes is (4, n_gt)
     for index in range(maxiou_indexes.shape[1]):
-        # maxiou_per_gt[index] is row w/ max iou
-        iou = np.amax(maxiou_per_gt[index])
         i = maxiou_indexes[1][index]
         j = maxiou_indexes[2][index]
         k = maxiou_indexes[3][index]
         color = box_color()
         box = boxes[0][i][j][k] #batch, row, col, box
-        label = labels[index]
         # default box format is xmin, xmax, ymin, ymax
         w = box[1] - box[0]
         h = box[3] - box[2]
         x = box[0]
         y = box[2]
         # Rectangle ((xmin, ymin), width, height) 
-        rect = Rectangle((x, y), w, h, linewidth=1, edgecolor='c', facecolor='none')
+        rect = Rectangle((x, y), w, h, linewidth=1, edgecolor='r', facecolor='none')
         ax.add_patch(rect)
 
-        # offset
-        dxmin = label[0] - box[0]
-        dxmax = label[1] - box[1]
-        dymin = label[2] - box[2]
-        dymax = label[3] - box[3]
-        print(index, ":", label[4], iou, dxmin, dxmax, dymin, dymax)
+        if maxiou_per_gt is not None and labels is not None:
+            # maxiou_per_gt[index] is row w/ max iou
+            iou = np.amax(maxiou_per_gt[index])
+            # offset
+            label = labels[index]
+            dxmin = label[0] - box[0]
+            dxmax = label[1] - box[1]
+            dymin = label[2] - box[2]
+            dymax = label[3] - box[3]
+            print(index, ":", label[4], iou, dxmin, dxmax, dymin, dymax)
 
     if labels is None:
         plt.show()
@@ -129,13 +130,14 @@ def dict_label(labels, keys):
 
 
 def feature_boxes(image, index):
-    d = np.linspace(0.2, 1.05, 6)
+    d = np.linspace(0.15, 0.8, 6)
     sizes = []
     for i in range(len(d)-1):
-        size = [d[i], math.sqrt(d[i] * d[i + 1])]
+        # size = [d[i], math.sqrt(d[i] * d[i + 1])]
+        size = [d[i], (d[i] * 0.5)]
         sizes.append(size)
     
-    shift = [4, 5, 6, 7, 8]
+    shift = [4, 5, 6, 7, 8] # image div by 2**4 to 2**8
     feature_height = image.shape[0] >> shift[index]
     feature_width = image.shape[1] >> shift[index]
     feature_shape = (1, feature_height, feature_width, image.shape[-1])
@@ -160,8 +162,8 @@ if __name__ == '__main__':
                         type=int,
                         help=help_)
 
-    help_ = "Show anchors"
-    parser.add_argument("--anchors",
+    help_ = "Show grids"
+    parser.add_argument("--show_grids",
                         default=False,
                         action='store_true',
                         help=help_)
@@ -186,10 +188,17 @@ if __name__ == '__main__':
         if len(args.maxiou_indexes) % 2 != 0:
             exit(0)
         maxiou_indexes = np.array(args.maxiou_indexes).astype(np.uint8)
-        maxiou_indexes = np.reshape(maxiou_indexes, [-1, 2])
+        maxiou_indexes = np.reshape(maxiou_indexes, [4, -1])
  
-        feature_shape, boxes = feature_boxes(image, args.size)
-        #_, ax = show_anchors(image, feature_shape, boxes, maxiou_per_gt, args.labels)
+        feature_shape, boxes = feature_boxes(image, args.index)
+        _, ax = show_anchors(image,
+                            feature_shape,
+                            boxes,
+                            maxiou_indexes=maxiou_indexes,
+                            maxiou_per_gt=None,
+                            labels=None,
+                            show_grids=args.show_grids)
+        exit(0)
         #print("Orig boxes shape ", boxes.shape)
 
     if args.labels:

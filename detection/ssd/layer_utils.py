@@ -19,6 +19,7 @@ def anchor_boxes(feature_shape,
                  x=None,
                  is_K_tensor=True):
     
+    print("sizes: ", sizes)
     n_boxes = len(aspect_ratios) + len(sizes) - 1
     image_height, image_width, _ = image_shape
     batch_size, feature_height, feature_width, _ = feature_shape
@@ -32,8 +33,8 @@ def anchor_boxes(feature_shape,
         box_width = norm_width * np.sqrt(ar)
         wh_list.append((box_width, box_height))
     for size in sizes[1:]:
-        box_height = norm_height * size
-        box_width = norm_width * size
+        box_height = image_height * size
+        box_width = image_width * size
         wh_list.append((box_width, box_height))
 
     wh_list = np.array(wh_list)
