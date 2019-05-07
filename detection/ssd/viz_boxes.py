@@ -17,6 +17,7 @@ from layer_utils import anchor_boxes
 import layer_utils
 import argparse
 import os
+import math
 from random import randint
 
 
@@ -127,12 +128,20 @@ def dict_label(labels, keys):
     return dic
 
 
-def feature_boxes(image, size):
-    feature_height = image.shape[0] >> size
-    feature_width = image.shape[1] >> size
+def feature_boxes(image, index):
+    d = np.linspace(0.2, 1.05, 6)
+    sizes = []
+    for i in range(len(d)-1):
+        size = [d[i], math.sqrt(d[i] * d[i + 1])]
+        sizes.append(size)
+    
+    shift = [4, 5, 6, 7, 8]
+    feature_height = image.shape[0] >> shift[index]
+    feature_width = image.shape[1] >> shift[index]
     feature_shape = (1, feature_height, feature_width, image.shape[-1])
     boxes = anchor_boxes(feature_shape,
                          image.shape,
+                         sizes=sizes[index],
                          is_K_tensor=False)
     return feature_shape, boxes
 
@@ -144,8 +153,13 @@ if __name__ == '__main__':
     parser.add_argument("--image",
                         default = '1479506174991516375.jpg',
                         help=help_)
-    help_ = "Receptive field size factor"
-    parser.add_argument("--size", default=6, type=int, help=help_)
+
+    help_ = "Index of receptive field (0 to 3)"
+    parser.add_argument("--index",
+                        default=0,
+                        type=int,
+                        help=help_)
+
     help_ = "Show anchors"
     parser.add_argument("--anchors",
                         default=False,
@@ -190,7 +204,7 @@ if __name__ == '__main__':
         labels_category = np.array(labels)
         labels = labels_category[:,0:-1]
 
-        feature_shape, boxes = feature_boxes(image, args.size)
+        feature_shape, boxes = feature_boxes(image, args.index)
         reshaped_boxes = np.reshape(boxes, [-1, 4])
         anchors_array_shape = boxes.shape[0:4]
         print("Labels shape ", labels.shape)

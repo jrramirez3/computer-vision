@@ -14,8 +14,7 @@ from tensorflow.keras.layers import Layer
 
 def anchor_boxes(feature_shape,
                  image_shape,
-                 sizes=[1.2, 0.75], 
-                 #sizes=[0.9, 0.2], 
+                 sizes=[0.2, 0.37], 
                  aspect_ratios=[1, 2, 0.5],
                  x=None,
                  is_K_tensor=True):
@@ -24,20 +23,23 @@ def anchor_boxes(feature_shape,
     image_height, image_width, _ = image_shape
     batch_size, feature_height, feature_width, _ = feature_shape
 
-    grid_width = image_width / feature_width
-    grid_height = image_height / feature_height
+    norm_width = image_width * sizes[0]
+    norm_height = image_height * sizes[0]
 
     wh_list = []
     for ar in aspect_ratios:
-        box_height = grid_height * sizes[0] / np.sqrt(ar)
-        box_width = grid_width * sizes[0] * np.sqrt(ar)
+        box_height = norm_height / np.sqrt(ar)
+        box_width = norm_width * np.sqrt(ar)
         wh_list.append((box_width, box_height))
     for size in sizes[1:]:
-        box_height = grid_height * size
-        box_width = grid_width * size
+        box_height = norm_height * size
+        box_width = norm_width * size
         wh_list.append((box_width, box_height))
 
     wh_list = np.array(wh_list)
+
+    grid_width = image_width / feature_width
+    grid_height = image_height / feature_height
 
     start = grid_height * 0.5
     end = (feature_height - 0.5) * grid_height
@@ -134,6 +136,9 @@ def iou(boxes1, boxes2):
 
 def maxiou(iou, anchors_array_shape):
     maxiou_per_gt = np.argmax(iou, axis=0)
+    print("MaxIOU shape: ", maxiou_per_gt.shape)
     maxiou_indexes = np.array(np.unravel_index(maxiou_per_gt, anchors_array_shape))
     maxiou_per_gt = iou[maxiou_per_gt]
+    print("MaxIOU GT shape: ", maxiou_per_gt.shape)
+    print("MaxIOU indexes shape: ", maxiou_indexes.shape)
     return maxiou_per_gt, maxiou_indexes
