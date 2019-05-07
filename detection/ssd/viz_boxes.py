@@ -22,10 +22,15 @@ from random import randint
 
 
 def box_color(index=None):
-    colors = ['b', 'y', 'w', 'g', 'c', 'r', 'g', 'c', 'm', 'k']
+    colors = ['w', 'r', 'b', 'g', 'c', 'y', 'g', 'c', 'm', 'k']
     if index is None:
         return colors[randint(0, len(colors) - 1)]
     return colors[index % len(colors)]
+
+
+def class_names(index=0):
+    classes = ["background", "car", "truck", "pedestrian", "street light"]
+    return classes[index]
 
 def show_anchors(image,
                  feature_shape,
@@ -65,7 +70,7 @@ def show_anchors(image,
         x = box[0]
         y = box[2]
         # Rectangle ((xmin, ymin), width, height) 
-        rect = Rectangle((x, y), w, h, linewidth=1, edgecolor='r', facecolor='none')
+        rect = Rectangle((x, y), w, h, linewidth=2, edgecolor='y', facecolor='none')
         ax.add_patch(rect)
 
         if maxiou_per_gt is not None and labels is not None:
@@ -73,6 +78,11 @@ def show_anchors(image,
             iou = np.amax(maxiou_per_gt[index])
             # offset
             label = labels[index]
+
+            category = int(label[4])
+            class_name = class_names(int(label[4]))
+            bbox = dict(facecolor=box_color(category), color=box_color(category), alpha=1.0)
+            ax.text(label[0], label[2], class_name, color='w', fontweight='bold', bbox=bbox, fontsize=8, verticalalignment='top')
             dxmin = label[0] - box[0]
             dxmax = label[1] - box[1]
             dymin = label[2] - box[2]
@@ -97,7 +107,7 @@ def show_labels(image, labels, ax=None):
         y = label[2]
         category = int(label[4])
         # Rectangle ((xmin, ymin), width, height) 
-        rect = Rectangle((x, y), w, h, linewidth=1, edgecolor=box_color(category), facecolor='none')
+        rect = Rectangle((x, y), w, h, linewidth=2, edgecolor=box_color(category), facecolor='none')
         ax.add_patch(rect)
     plt.show()
 
