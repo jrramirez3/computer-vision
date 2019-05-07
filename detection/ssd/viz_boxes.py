@@ -39,7 +39,6 @@ def show_anchors(image,
     fig, ax = plt.subplots(1)
     ax.imshow(image)
     if show_grids:
-        # Show grids
         grid_height = image_height // feature_height
         for i in range(feature_height):
             y = i * grid_height
@@ -52,33 +51,31 @@ def show_anchors(image,
             line = Line2D([x, x], [0, image_height])
             ax.add_line(line)
 
-    #rows = [i for i in range(boxes.shape[1])]
-    #cols = [i for i in range(boxes.shape[2])]
-    #anchors = [i for i in range(boxes.shape[3])]
+    # maxiou_indexes is (4, n_gt)
     for index in range(maxiou_indexes.shape[1]):
+        # maxiou_per_gt[index] is row w/ max iou
         iou = np.amax(maxiou_per_gt[index])
-        #if iou < 0.2:
-        #    continue
         i = maxiou_indexes[1][index]
         j = maxiou_indexes[2][index]
         k = maxiou_indexes[3][index]
         color = box_color()
-        # default label formal is xmin, xmax, ymin, ymax
-        box = boxes[0][i][j][k]
+        box = boxes[0][i][j][k] #batch, row, col, box
         label = labels[index]
+        # default box format is xmin, xmax, ymin, ymax
         w = box[1] - box[0]
         h = box[3] - box[2]
         x = box[0]
         y = box[2]
         # Rectangle ((xmin, ymin), width, height) 
-        dxmin = box[0] - label[0]
-        dxmax = box[1] - label[1]
-        dymin = box[2] - label[2]
-        dymax = box[3] - label[3]
-        print(index, ":", label[4], iou, dxmin, dxmax, dymin, dymax)
-        
         rect = Rectangle((x, y), w, h, linewidth=1, edgecolor='c', facecolor='none')
         ax.add_patch(rect)
+
+        # offset
+        dxmin = label[0] - box[0]
+        dxmax = label[1] - box[1]
+        dymin = label[2] - box[2]
+        dymax = label[3] - box[3]
+        print(index, ":", label[4], iou, dxmin, dxmax, dymin, dymax)
 
     if labels is None:
         plt.show()
@@ -91,7 +88,7 @@ def show_labels(image, labels, ax=None):
         fig, ax = plt.subplots(1)
         ax.imshow(image)
     for label in labels:
-        # default label formal is xmin, xmax, ymin, ymax
+        # default label format is xmin, xmax, ymin, ymax
         w = label[1] - label[0]
         h = label[3] - label[2]
         x = label[0]
@@ -107,19 +104,18 @@ def loadcsv(path):
     data = []
     with open(path) as csv_file:
         rows = csv.reader(csv_file, delimiter=',')
-        # rows = rows[1:]
         for row in rows:
             data.append(row)
 
     return np.array(data)
-    # return np.genfromtxt(path, dtype=[str, np.uint8, np.uint8, np.uint8, np.uint8, np.uint8], delimiter=',')
+
 
 def dict_label(labels, keys):
     dic = {}
+    # boxes = []
     for key in keys:
-        boxes = []
-        dic[key] = boxes
-        #print(key)
+        dic[key] = [] # boxes
+
     for label in labels:
         value = label[1:]
         value = value.astype(np.float32)
@@ -127,9 +123,9 @@ def dict_label(labels, keys):
         boxes = dic[key]
         boxes.append(value)
         dic[key] = boxes
-        #print(boxes)
 
     return dic
+
 
 def feature_boxes(image, size):
     feature_height = image.shape[0] >> size
@@ -138,8 +134,6 @@ def feature_boxes(image, size):
     boxes = anchor_boxes(feature_shape,
                          image.shape,
                          is_K_tensor=False)
-    #print("Orig boxes shape ", boxes.shape)
-    #boxes = np.reshape(boxes, [-1, 4])
     return feature_shape, boxes
 
 
@@ -168,7 +162,6 @@ if __name__ == '__main__':
                         action='store_true',
                         help=help_)
     args = parser.parse_args()
-    args = parser.parse_args()
 
     image_path = os.path.join(data_path, args.image)
     image = skimage.img_as_float(imread(image_path))
@@ -192,7 +185,7 @@ if __name__ == '__main__':
         keys = np.unique(labels[:,0])
         dic = dict_label(labels, keys)
         labels = dic[args.image]
-        print(labels)
+        # print(labels)
 
         labels_category = np.array(labels)
         labels = labels_category[:,0:-1]
@@ -205,7 +198,7 @@ if __name__ == '__main__':
         print("Anchors array shape ", anchors_array_shape)
 
         iou = layer_utils.iou(reshaped_boxes, labels)
-        print("IOU array shape:", iou.shape)
+        print("IOU shape:", iou.shape)
         maxiou_per_gt, maxiou_indexes = layer_utils.maxiou(iou,
                                                            anchors_array_shape)
         _, ax = show_anchors(image,
