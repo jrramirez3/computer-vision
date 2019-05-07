@@ -165,6 +165,7 @@ def build_ssd(input_shape,
     anchors7 = Anchor(input_shape,
                       index=3,
                       name='anchors7')(offsets7)
+
     print(K.int_shape(offsets4))
     print(K.int_shape(anchors4))
     print(K.int_shape(offsets5))
@@ -173,7 +174,6 @@ def build_ssd(input_shape,
     print(K.int_shape(anchors6))
     print(K.int_shape(offsets7))
     print(K.int_shape(anchors7))
-
 
     # Reshape the class predictions, yielding 3D tensors of shape `(batch, height * width * n_boxes, n_classes)`
     # We want the classes isolated in the last axis to perform softmax on them
@@ -206,7 +206,7 @@ def build_ssd(input_shape,
                                                                  classes7_reshaped])
 
     # Output shape of `boxes_concat`: (batch, n_boxes_total, 4)
-    boxes_concat = Concatenate(axis=1, name='boxes_concat')([offsets4_reshaped,
+    offsets_concat = Concatenate(axis=1, name='offsets_concat')([offsets4_reshaped,
                                                              offsets5_reshaped,
                                                              offsets6_reshaped,
                                                              offsets7_reshaped])
@@ -224,7 +224,7 @@ def build_ssd(input_shape,
     # Concatenate the class and box coordinate predictions and the anchors to one large predictions tensor
     # Output shape of `predictions`: (batch, n_boxes_total, n_classes + 4 + 8)
     # predictions = Concatenate(axis=2, name='predictions')([classes_softmax, boxes_concat])
-    predictions = Concatenate(axis=2, name='predictions')([classes_softmax, boxes_concat, anchors_concat])
+    predictions = Concatenate(axis=2, name='predictions')([classes_softmax, offsets_concat, anchors_concat])
 
     model = Model(inputs=inputs, outputs=predictions)
     return model
@@ -239,3 +239,4 @@ if __name__ == '__main__':
     base.summary()
     ssd = build_ssd(input_shape, base)
     ssd.summary()
+    plot_model(ssd, to_file="ssd.png", show_shapes=True)
