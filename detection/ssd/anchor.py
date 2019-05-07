@@ -11,19 +11,20 @@ from keras import backend as K
 from tensorflow.keras.layers import Layer
 
 from layer_utils import anchor_boxes
+import layer_utils
 
 class Anchor(Layer):
 
     def __init__(self,
             image_shape,
-            sizes=[1.5, 0.75], 
-            aspect_ratios=[1, 2, 0.5],
+            index=0,
             **kwargs):
 
         self.image_shape = image_shape
-        self.sizes = sizes
-        self.aspect_ratios = aspect_ratios
-        self.n_boxes = len(aspect_ratios) + len(sizes) - 1
+        self.index = index
+        self.sizes = layer_utils.anchor_sizes()[index]
+        self.aspect_ratios = layer_utils.anchor_aspect_ratios()
+        self.n_boxes = len(self.aspect_ratios) + len(self.sizes) - 1
         super(Anchor, self).__init__(**kwargs)
 
     def build(self, input_shape):
@@ -33,8 +34,7 @@ class Anchor(Layer):
     def call(self, x):
         return anchor_boxes(K.int_shape(x),
                             self.image_shape,
-                            sizes=self.sizes,
-                            aspect_ratios=self.aspect_ratios,
+                            index=self.index,
                             x=x)
 
     def compute_output_shape(self, input_shape):

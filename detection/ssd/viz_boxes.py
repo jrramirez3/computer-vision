@@ -13,7 +13,7 @@ from skimage.io import imread
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
-from layer_utils import anchor_boxes
+from layer_utils import anchor_boxes, anchor_sizes
 import layer_utils
 import argparse
 import os
@@ -140,20 +140,13 @@ def dict_label(labels, keys):
 
 
 def feature_boxes(image, index):
-    d = np.linspace(0.15, 0.8, 6)
-    sizes = []
-    for i in range(len(d)-1):
-        # size = [d[i], math.sqrt(d[i] * d[i + 1])]
-        size = [d[i], (d[i] * 0.5)]
-        sizes.append(size)
-    
     shift = [4, 5, 6, 7, 8] # image div by 2**4 to 2**8
     feature_height = image.shape[0] >> shift[index]
     feature_width = image.shape[1] >> shift[index]
     feature_shape = (1, feature_height, feature_width, image.shape[-1])
     boxes = anchor_boxes(feature_shape,
                          image.shape,
-                         sizes=sizes[index],
+                         index=index,
                          is_K_tensor=False)
     return feature_shape, boxes
 

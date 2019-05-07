@@ -14,12 +14,14 @@ from tensorflow.keras.layers import Layer
 
 def anchor_boxes(feature_shape,
                  image_shape,
-                 sizes=[0.2, 0.37], 
-                 aspect_ratios=[1, 2, 0.5],
+                 index=0,
                  x=None,
                  is_K_tensor=True):
     
+    sizes = anchor_sizes()[index]
+    aspect_ratios = anchor_aspect_ratios()
     print("sizes: ", sizes)
+    print("aspect ratios: ", aspect_ratios)
     n_boxes = len(aspect_ratios) + len(sizes) - 1
     image_height, image_width, _ = image_shape
     batch_size, feature_height, feature_width, _ = feature_shape
@@ -143,3 +145,17 @@ def maxiou(iou, anchors_array_shape):
     print("MaxIOU GT shape: ", maxiou_per_gt.shape)
     print("MaxIOU indexes shape: ", maxiou_indexes.shape)
     return maxiou_per_gt, maxiou_indexes
+
+
+def anchor_sizes():
+    d = np.linspace(0.15, 0.8, 6)
+    sizes = []
+    for i in range(len(d)-1):
+        # size = [d[i], math.sqrt(d[i] * d[i + 1])]
+        size = [d[i], (d[i] * 0.5)]
+        sizes.append(size)
+
+    return sizes
+
+def anchor_aspect_ratios():
+    return [1, 2, 0.5]

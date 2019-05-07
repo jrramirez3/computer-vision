@@ -17,6 +17,8 @@ from tensorflow.keras.utils import plot_model
 from keras import backend as K
 from anchor import Anchor
 
+import layer_utils
+
 import numpy as np
 import argparse
 
@@ -106,15 +108,11 @@ def build_basenetwork(input_shape,
 
 def build_ssd(input_shape,
               basenetwork,
-              sizes=[1.5, 0.75], 
-              aspect_ratios=[1, 2, 0.5],
               n_classes=5):
-              
-
+    sizes = layer_utils.anchor_sizes()
+    aspect_ratios = layer_utils.anchor_aspect_ratios()
+    # 5 classes = background, car, truck, pedestrian, traffic light
     n_boxes = len(aspect_ratios) + len(sizes) - 1
-    #image_width, image_height, channels = input_shape
-    #n_predictor_layers = 4
-    #scales = np.linspace(0.1, 0.9, n_predictor_layers + 1)
 
     inputs = Input(shape=input_shape)
     conv4, conv5, conv6, conv7 = basenetwork(inputs)
@@ -136,48 +134,44 @@ def build_ssd(input_shape,
                        kernel_size=3,
                        name='classes7')
 
-    # Output shape of `boxes`: `(batch, height, width, n_boxes * 4)`
-    boxes4  = conv2d(conv4,
+    # Output shape of `offsets`: `(batch, height, width, n_boxes * 4)`
+    offsets4  = conv2d(conv4,
                      n_boxes*4,
                      kernel_size=3,
-                     name='boxes4')
-    boxes5  = conv2d(conv5,
+                     name='offsets4')
+    offsets5  = conv2d(conv5,
                      n_boxes*4,
                      kernel_size=3,
-                     name='boxes5')
-    boxes6  = conv2d(conv6,
+                     name='offsets5')
+    offsets6  = conv2d(conv6,
                      n_boxes*4,
                      kernel_size=3,
-                     name='boxes6')
-    boxes7  = conv2d(conv7,
+                     name='offsets6')
+    offsets7  = conv2d(conv7,
                      n_boxes*4,
                      kernel_size=3,
-                     name='boxes7')
+                     name='offsets7')
 
 
     anchors4 = Anchor(input_shape,
-                      sizes=sizes,
-                      aspect_ratios=aspect_ratios,
-                      name='anchors4')(boxes4)
+                      index=0,
+                      name='anchors4')(offsets4)
     anchors5 = Anchor(input_shape,
-                      sizes=sizes,
-                      aspect_ratios=aspect_ratios,
-                      name='anchors5')(boxes5)
+                      index=1,
+                      name='anchors5')(offsets5)
     anchors6 = Anchor(input_shape,
-                      sizes=sizes,
-                      aspect_ratios=aspect_ratios,
-                      name='anchors6')(boxes6)
+                      index=2,
+                      name='anchors6')(offsets6)
     anchors7 = Anchor(input_shape,
-                      sizes=sizes,
-                      aspect_ratios=aspect_ratios,
-                      name='anchors7')(boxes7)
-    print(K.int_shape(boxes4))
+                      index=3,
+                      name='anchors7')(offsets7)
+    print(K.int_shape(offsets4))
     print(K.int_shape(anchors4))
-    print(K.int_shape(boxes5))
+    print(K.int_shape(offsets5))
     print(K.int_shape(anchors5))
-    print(K.int_shape(boxes6))
+    print(K.int_shape(offsets6))
     print(K.int_shape(anchors6))
-    print(K.int_shape(boxes7))
+    print(K.int_shape(offsets7))
     print(K.int_shape(anchors7))
 
 
@@ -190,10 +184,10 @@ def build_ssd(input_shape,
 
     # Reshape the box coordinate predictions, yielding 3D tensors of shape `(batch, height * width * n_boxes, 4)`
     # We want the four box coordinates isolated in the last axis to compute the smooth L1 loss
-    boxes4_reshaped = Reshape((-1, 4), name='boxes4_reshape')(boxes4)
-    boxes5_reshaped = Reshape((-1, 4), name='boxes5_reshape')(boxes5)
-    boxes6_reshaped = Reshape((-1, 4), name='boxes6_reshape')(boxes6)
-    boxes7_reshaped = Reshape((-1, 4), name='boxes7_reshape')(boxes7)
+    offsets4_reshaped = Reshape((-1, 4), name='offsets4_reshape')(offsets4)
+    offsets5_reshaped = Reshape((-1, 4), name='offsets5_reshape')(offsets5)
+    offsets6_reshaped = Reshape((-1, 4), name='offsets6_reshape')(offsets6)
+    offsets7_reshaped = Reshape((-1, 4), name='offsets7_reshape')(offsets7)
 
 
     # Reshape the anchor coordinate predictions, yielding 3D tensors of shape `(batch, height * width * n_boxes, 4)`
@@ -212,10 +206,10 @@ def build_ssd(input_shape,
                                                                  classes7_reshaped])
 
     # Output shape of `boxes_concat`: (batch, n_boxes_total, 4)
-    boxes_concat = Concatenate(axis=1, name='boxes_concat')([boxes4_reshaped,
-                                                             boxes5_reshaped,
-                                                             boxes6_reshaped,
-                                                             boxes7_reshaped])
+    boxes_concat = Concatenate(axis=1, name='boxes_concat')([offsets4_reshaped,
+                                                             offsets5_reshaped,
+                                                             offsets6_reshaped,
+                                                             offsets7_reshaped])
 
     # Output shape of `anchors_concat`: (batch, n_boxes_total, 4)
     anchors_concat = Concatenate(axis=1, name='anchors_concat')([anchors4_reshaped,
