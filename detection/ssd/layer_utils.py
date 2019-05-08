@@ -11,6 +11,18 @@ import tensorflow as tf
 from keras import backend as K
 from tensorflow.keras.layers import Layer
 
+def anchor_sizes():
+    d = np.linspace(0.15, 0.8, 6)
+    sizes = []
+    for i in range(len(d)-1):
+        # size = [d[i], math.sqrt(d[i] * d[i + 1])]
+        size = [d[i], (d[i] * 0.5)]
+        sizes.append(size)
+
+    return sizes
+
+def anchor_aspect_ratios():
+    return [1, 2, 0.5]
 
 def anchor_boxes(feature_shape,
                  image_shape,
@@ -145,17 +157,3 @@ def maxiou(iou, anchors_array_shape):
     print("MaxIOU GT shape: ", maxiou_per_gt.shape)
     print("MaxIOU indexes shape: ", maxiou_indexes.shape)
     return maxiou_per_gt, maxiou_indexes
-
-
-def anchor_sizes():
-    d = np.linspace(0.15, 0.8, 6)
-    sizes = []
-    for i in range(len(d)-1):
-        # size = [d[i], math.sqrt(d[i] * d[i + 1])]
-        size = [d[i], (d[i] * 0.5)]
-        sizes.append(size)
-
-    return sizes
-
-def anchor_aspect_ratios():
-    return [1, 2, 0.5]

@@ -8,33 +8,20 @@ from __future__ import print_function
 
 import numpy as np
 import skimage
-import csv
-from skimage.io import imread
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
-from matplotlib.lines import Line2D
-from layer_utils import anchor_boxes, anchor_sizes
-import layer_utils
 import argparse
 import os
-import math
-from random import randint
+import layer_utils
+import label_utils
 
+from skimage.io import imread
+from matplotlib.patches import Rectangle
+from matplotlib.lines import Line2D
 
-def box_color(index=None):
-    colors = ['w', 'r', 'b', 'g', 'c', 'y', 'g', 'c', 'm', 'k']
-    if index is None:
-        return colors[randint(0, len(colors) - 1)]
-    return colors[index % len(colors)]
-
-
-def class_names(index=0):
-    classes = ["background", "car", "truck", "pedestrian", "street light"]
-    return classes[index]
 
 def show_anchors(image,
                  feature_shape,
-                 boxes,
+                 anchors,
                  maxiou_indexes=None,
                  maxiou_per_gt=None,
                  labels=None,
@@ -62,15 +49,20 @@ def show_anchors(image,
         i = maxiou_indexes[1][index]
         j = maxiou_indexes[2][index]
         k = maxiou_indexes[3][index]
-        color = box_color()
-        box = boxes[0][i][j][k] #batch, row, col, box
-        # default box format is xmin, xmax, ymin, ymax
+        # color = label_utils.get_box_color()
+        box = anchors[0][i][j][k] #batch, row, col, box
+        # default anchor box format is xmin, xmax, ymin, ymax
         w = box[1] - box[0]
         h = box[3] - box[2]
         x = box[0]
         y = box[2]
         # Rectangle ((xmin, ymin), width, height) 
-        rect = Rectangle((x, y), w, h, linewidth=2, edgecolor='y', facecolor='none')
+        rect = Rectangle((x, y),
+                         w,
+                         h,
+                         linewidth=2,
+                         edgecolor='y',
+                         facecolor='none')
         ax.add_patch(rect)
 
         if maxiou_per_gt is not None and labels is not None:
@@ -80,9 +72,17 @@ def show_anchors(image,
             label = labels[index]
 
             category = int(label[4])
-            class_name = class_names(int(label[4]))
-            bbox = dict(facecolor=box_color(category), color=box_color(category), alpha=1.0)
-            ax.text(label[0], label[2], class_name, color='w', fontweight='bold', bbox=bbox, fontsize=8, verticalalignment='top')
+            class_name = label_utils.index2class(category)
+            color = label_utils.get_box_color(category)
+            bbox = dict(facecolor=color, color=color, alpha=1.0)
+            ax.text(label[0],
+                    label[2],
+                    class_name,
+                    color='w',
+                    fontweight='bold',
+                    bbox=bbox,
+                    fontsize=8,
+                    verticalalignment='top')
             dxmin = label[0] - box[0]
             dxmax = label[1] - box[1]
             dymin = label[2] - box[2]
@@ -106,37 +106,16 @@ def show_labels(image, labels, ax=None):
         x = label[0]
         y = label[2]
         category = int(label[4])
+        color = label_utils.get_box_color(category)
         # Rectangle ((xmin, ymin), width, height) 
-        rect = Rectangle((x, y), w, h, linewidth=2, edgecolor=box_color(category), facecolor='none')
+        rect = Rectangle((x, y),
+                         w,
+                         h,
+                         linewidth=2,
+                         edgecolor=color,
+                         facecolor='none')
         ax.add_patch(rect)
     plt.show()
-
-
-def loadcsv(path):
-    data = []
-    with open(path) as csv_file:
-        rows = csv.reader(csv_file, delimiter=',')
-        for row in rows:
-            data.append(row)
-
-    return np.array(data)
-
-
-def dict_label(labels, keys):
-    dic = {}
-    # boxes = []
-    for key in keys:
-        dic[key] = [] # boxes
-
-    for label in labels:
-        value = label[1:]
-        value = value.astype(np.float32)
-        key = label[0]
-        boxes = dic[key]
-        boxes.append(value)
-        dic[key] = boxes
-
-    return dic
 
 
 def feature_boxes(image, index):
@@ -144,10 +123,10 @@ def feature_boxes(image, index):
     feature_height = image.shape[0] >> shift[index]
     feature_width = image.shape[1] >> shift[index]
     feature_shape = (1, feature_height, feature_width, image.shape[-1])
-    boxes = anchor_boxes(feature_shape,
-                         image.shape,
-                         index=index,
-                         is_K_tensor=False)
+    boxes = layer_utils.anchor_boxes(feature_shape,
+                                     image.shape,
+                                     index=index,
+                                     is_K_tensor=False)
     return feature_shape, boxes
 
 
@@ -176,7 +155,7 @@ if __name__ == '__main__':
                         help='<Required> Set flag')
 
     help_ = "Show labels"
-    parser.add_argument("--labels",
+    parser.add_argument("--show_labels",
                         default=False,
                         action='store_true',
                         help=help_)
@@ -195,43 +174,43 @@ if __name__ == '__main__':
  
         feature_shape, boxes = feature_boxes(image, args.index)
         _, ax = show_anchors(image,
-                            feature_shape,
-                            boxes,
-                            maxiou_indexes=maxiou_indexes,
-                            maxiou_per_gt=None,
-                            labels=None,
-                            show_grids=args.show_grids)
-        exit(0)
-        #print("Orig boxes shape ", boxes.shape)
-
-    if args.labels:
-        csv_file = os.path.join(data_path, 'labels_train.csv')
-        labels = loadcsv(csv_file)
-        labels = labels[1:]
-        keys = np.unique(labels[:,0])
-        dic = dict_label(labels, keys)
-        labels = dic[args.image]
-        # print(labels)
-
-        labels_category = np.array(labels)
-        labels = labels_category[:,0:-1]
-
-        feature_shape, boxes = feature_boxes(image, args.index)
-        reshaped_boxes = np.reshape(boxes, [-1, 4])
-        anchors_array_shape = boxes.shape[0:4]
-        print("Labels shape ", labels.shape)
-        print("Boxes shape ", boxes.shape)
-        print("Anchors array shape ", anchors_array_shape)
-
-        iou = layer_utils.iou(reshaped_boxes, labels)
-        print("IOU shape:", iou.shape)
-        maxiou_per_gt, maxiou_indexes = layer_utils.maxiou(iou,
-                                                           anchors_array_shape)
-        _, ax = show_anchors(image,
                              feature_shape,
                              boxes,
                              maxiou_indexes=maxiou_indexes,
+                             maxiou_per_gt=None,
+                             labels=None,
+                             show_grids=args.show_grids)
+        exit(0)
+
+    if args.show_labels:
+        csv_file = os.path.join(data_path, 'labels_train.csv')
+        labels = label_utils.load_csv(csv_file)
+        labels = labels[1:]
+        keys = np.unique(labels[:,0])
+        dic = label_utils.get_label_dictionary(labels, keys)
+        labels = dic[args.image]
+
+        # labels are made of bounding boxes and categories
+        labels = np.array(labels)
+        boxes = labels[:,0:-1]
+
+        feature_shape, anchors = feature_boxes(image, args.index)
+        anchors_ = anchors
+        anchors_shape = anchors.shape[0:4]
+        anchors = np.reshape(anchors, [-1, 4])
+        print("Labels shape ", labels.shape)
+        print("Boxes shape ", boxes.shape)
+        print("Anchors shape ", anchors_shape)
+
+        iou = layer_utils.iou(anchors, boxes)
+        print("IOU shape:", iou.shape)
+        maxiou_per_gt, maxiou_indexes = layer_utils.maxiou(iou,
+                                                           anchors_shape)
+        _, ax = show_anchors(image,
+                             feature_shape,
+                             anchors=anchors_,
+                             maxiou_indexes=maxiou_indexes,
                              maxiou_per_gt=maxiou_per_gt,
-                             labels=labels_category,
+                             labels=labels,
                              show_grids=False)
-        show_labels(image, labels_category, ax)
+        show_labels(image, labels, ax)
