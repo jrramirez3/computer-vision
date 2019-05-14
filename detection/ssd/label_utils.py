@@ -9,6 +9,8 @@ from __future__ import print_function
 import numpy as np
 import csv
 import math
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 from random import randint
 
 
@@ -49,3 +51,32 @@ def get_label_dictionary(labels, keys):
         dictionary[key] = boxes
 
     return dictionary
+
+def build_label_dictionary(csv_path):
+    labels = load_csv(csv_path)
+    labels = labels[1:]
+    keys = np.unique(labels[:,0])
+    dictionary = get_label_dictionary(labels, keys)
+    return dictionary
+
+def show_labels(image, labels, ax=None):
+    if ax is None:
+        fig, ax = plt.subplots(1)
+        ax.imshow(image)
+    for label in labels:
+        # default label format is xmin, xmax, ymin, ymax
+        w = label[1] - label[0]
+        h = label[3] - label[2]
+        x = label[0]
+        y = label[2]
+        category = int(label[4])
+        color = get_box_color(category)
+        # Rectangle ((xmin, ymin), width, height) 
+        rect = Rectangle((x, y),
+                         w,
+                         h,
+                         linewidth=2,
+                         edgecolor=color,
+                         facecolor='none')
+        ax.add_patch(rect)
+    plt.show()

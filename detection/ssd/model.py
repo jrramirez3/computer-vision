@@ -105,6 +105,61 @@ def build_basenetwork(input_shape,
 
     return basenetwork
 
+def build_ssd4(input_shape,
+              basenetwork,
+              n_classes=5):
+    # 5 classes = background, car, truck, pedestrian, traffic light
+    sizes = layer_utils.anchor_sizes()[0]
+    aspect_ratios = layer_utils.anchor_aspect_ratios()
+    n_boxes = len(aspect_ratios) + len(sizes) - 1
+    print("n_boxes: ", n_boxes)
+    print("n_classes: ", n_classes)
+
+    inputs = Input(shape=input_shape)
+    conv4, _, _, _= basenetwork(inputs)
+
+    classes4  = conv2d(conv4,
+                       n_boxes*n_classes,
+                       kernel_size=3,
+                       name='classes4')
+
+    # Output shape of `offsets`: `(batch, height, width, n_boxes * 4)`
+    offsets4  = conv2d(conv4,
+                     n_boxes*4,
+                     kernel_size=3,
+                     name='offsets4')
+
+    anchors4 = Anchor(input_shape,
+                      index=0,
+                      name='anchors4')(offsets4)
+
+    # print(K.int_shape(offsets4))
+    # print(K.int_shape(anchors4))
+
+    # Reshape the class predictions, yielding 3D tensors of shape `(batch, height * width * n_boxes, n_classes)`
+    # We want the classes isolated in the last axis to perform softmax on them
+    classes4_reshaped = Reshape((-1, n_classes), name='classes4_reshape')(classes4)
+
+    # Reshape the box coordinate predictions, yielding 3D tensors of shape `(batch, height * width * n_boxes, 4)`
+    # We want the four box coordinates isolated in the last axis to compute the smooth L1 loss
+    offsets4_reshaped = Reshape((-1, 4), name='offsets4_reshape')(offsets4)
+
+    # Reshape the anchor coordinate predictions, yielding 3D tensors of shape `(batch, height * width * n_boxes, 4)`
+    anchors4_reshaped = Reshape((-1, 4), name='anchors4_reshape')(anchors4)
+
+    # Concatenate the predictions from the different layers and the assosciated anchor box tensors
+    # Axis 0 (batch) and axis 2 (n_classes or 4, respectively) are identical for all layer predictions,
+    # so we want to concatenate along axis 1
+    # Output shape of `classes_concat`: (batch, n_boxes_total, n_classes)
+    classes4_softmax = Activation('softmax', name='classes_softmax')(classes4_reshaped)
+
+    # Concatenate the class and box coordinate predictions and the anchors to one large predictions tensor
+    # Output shape of `predictions`: (batch, n_boxes_total, n_classes + 4 + 8)
+    # predictions = Concatenate(axis=2, name='predictions')([classes_softmax, boxes_concat])
+    # predictions = Concatenate(axis=2, name='predictions')([classes_softmax, offsets_concat, anchors_concat])
+    predictions = [classes4_softmax, offsets4_reshaped, anchors4_reshaped]
+    model = Model(inputs=inputs, outputs=predictions)
+    return model
 
 def build_ssd(input_shape,
               basenetwork,
@@ -116,6 +171,8 @@ def build_ssd(input_shape,
 
     inputs = Input(shape=input_shape)
     conv4, conv5, conv6, conv7 = basenetwork(inputs)
+
+
 
     classes4  = conv2d(conv4,
                        n_boxes*n_classes,
@@ -233,10 +290,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     help_ = "Build model"
     args = parser.parse_args()
-    input_shape = (480, 300, 3)
-    output_shape = (480, 300, 3)
+    input_shape = (300, 480, 3)
+    output_shape = (300,480, 3)
     base = build_basenetwork(input_shape, output_shape)
     base.summary()
-    ssd = build_ssd(input_shape, base)
+    ssd = build_ssd4(input_shape, base)
     ssd.summary()
     plot_model(ssd, to_file="ssd.png", show_shapes=True)

@@ -13,6 +13,7 @@ import argparse
 import os
 import layer_utils
 import label_utils
+import config
 
 from skimage.io import imread
 from matplotlib.patches import Rectangle
@@ -95,28 +96,6 @@ def show_anchors(image,
     return fig, ax
 
 
-def show_labels(image, labels, ax=None):
-    if ax is None:
-        fig, ax = plt.subplots(1)
-        ax.imshow(image)
-    for label in labels:
-        # default label format is xmin, xmax, ymin, ymax
-        w = label[1] - label[0]
-        h = label[3] - label[2]
-        x = label[0]
-        y = label[2]
-        category = int(label[4])
-        color = label_utils.get_box_color(category)
-        # Rectangle ((xmin, ymin), width, height) 
-        rect = Rectangle((x, y),
-                         w,
-                         h,
-                         linewidth=2,
-                         edgecolor=color,
-                         facecolor='none')
-        ax.add_patch(rect)
-    plt.show()
-
 
 def feature_boxes(image, index):
     shift = [4, 5, 6, 7, 8] # image div by 2**4 to 2**8
@@ -183,12 +162,10 @@ if __name__ == '__main__':
         exit(0)
 
     if args.show_labels:
-        csv_file = os.path.join(data_path, 'labels_train.csv')
-        labels = label_utils.load_csv(csv_file)
-        labels = labels[1:]
-        keys = np.unique(labels[:,0])
-        dic = label_utils.get_label_dictionary(labels, keys)
-        labels = dic[args.image]
+        csv_path = os.path.join(config.params['data_path'],
+                                config.params['train_labels'])
+        dictionary = label_utils.build_label_dictionary(csv_path)
+        labels = dictionary[args.image]
 
         # labels are made of bounding boxes and categories
         labels = np.array(labels)
@@ -198,9 +175,10 @@ if __name__ == '__main__':
         anchors_ = anchors
         anchors_shape = anchors.shape[0:4]
         anchors = np.reshape(anchors, [-1, 4])
-        print("Labels shape ", labels.shape)
-        print("Boxes shape ", boxes.shape)
-        print("Anchors shape ", anchors_shape)
+        print("GT labels shape ", labels.shape)
+        print("GT boxes shape ", boxes.shape)
+        print("Complete proposed anchors shape ", anchors_.shape)
+        print("Proposed anchors shape ", anchors_shape)
 
         iou = layer_utils.iou(anchors, boxes)
         print("IOU shape:", iou.shape)
@@ -213,4 +191,4 @@ if __name__ == '__main__':
                              maxiou_per_gt=maxiou_per_gt,
                              labels=labels,
                              show_grids=False)
-        show_labels(image, labels, ax)
+        label_utils.show_labels(image, labels, ax)

@@ -7,51 +7,54 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-from tensorflow.keras.layers import Layer
 import keras
-from keras import backend as K
-
 import layer_utils
+import label_utils
+import os
 
 class DataGenerator(keras.utils.Sequence):
 
     def __init__(self,
-                 labels_filename,
+                 params={},
+                 data_split='train_labels',
                  batch_size=32,
                  n_classes=5,
                  shuffle=True):
-        'Initialization'
         self.batch_size = batch_size
-        self.labels_filename = labels
         self.n_classes = n_classes
         self.shuffle = shuffle
+        csv_path = os.path.join(params['data_path'],
+                                params[data_split])
+        self.params = params
+        self.dictionary = label_utils.build_label_dictionary(csv_path)
+        self.keys = np.array(list(self.dictionary.keys()))
+
         self.on_epoch_end()
 
     def __len__(self):
         'Denotes the number of batches per epoch'
-        return int(np.floor(len(self.list_IDs) / self.batch_size))
+        return int(np.floor(len(self.dictionary) / self.batch_size))
 
     def __getitem__(self, index):
         'Generate one batch of data'
         # Generate indexes of the batch
-        indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
-
-        # Find list of IDs
-        list_IDs_temp = [self.list_IDs[k] for k in indexes]
+        keys = self.keys[index*self.batch_size:(index+1)*self.batch_size]
 
         # Generate data
-        X, y = self.__data_generation(list_IDs_temp)
+        x, y = self.__data_generation(keys)
 
-        return X, y
+        return x, y
 
     def on_epoch_end(self):
         'Updates indexes after each epoch'
-        self.indexes = np.arange(len(self.list_IDs))
         if self.shuffle == True:
-            np.random.shuffle(self.indexes)
+            np.random.shuffle(self.keys)
 
-    def __data_generation(self, list_IDs_temp):
+    def __data_generation(self, keys):
         'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
+
+        for key in keys:
+            filename = 
         # Initialization
         X = np.empty((self.batch_size, *self.dim, self.n_channels))
         y = np.empty((self.batch_size), dtype=int)

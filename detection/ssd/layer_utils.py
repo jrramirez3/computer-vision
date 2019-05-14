@@ -133,8 +133,6 @@ def union(boxes1, boxes2, intersection_areas):
     ymax = 3
 
     areas = (boxes1[:, xmax] - boxes1[:, xmin]) * (boxes1[:, ymax] - boxes1[:, ymin])
-    areas = (boxes1[:, xmax] - boxes1[:, xmin]) * (boxes1[:, ymax] - boxes1[:, ymin])
-    areas = (boxes1[:, xmax] - boxes1[:, xmin]) * (boxes1[:, ymax] - boxes1[:, ymin])
     boxes1_areas = np.tile(np.expand_dims(areas, axis=1), reps=(1,n))
     areas = (boxes2[:,xmax] - boxes2[:,xmin]) * (boxes2[:,ymax] - boxes2[:,ymin])
     boxes2_areas = np.tile(np.expand_dims(areas, axis=0), reps=(m,1))
