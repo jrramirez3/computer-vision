@@ -15,14 +15,14 @@ from random import randint
 
 
 def get_box_color(index=None):
-    colors = ['w', 'r', 'b', 'g', 'c', 'y', 'g', 'c', 'm', 'k']
+    colors = ['w', 'r', 'b', 'g', 'c', 'm', 'y', 'g', 'c', 'm', 'k']
     if index is None:
         return colors[randint(0, len(colors) - 1)]
     return colors[index % len(colors)]
 
 
 def index2class(index=0):
-    classes = ["background", "car", "truck", "pedestrian", "street light"]
+    classes = ["background", "car", "truck", "pedestrian", "street light", "traffic light"]
     return classes[index]
 
 
@@ -57,7 +57,11 @@ def build_label_dictionary(csv_path):
     labels = labels[1:]
     keys = np.unique(labels[:,0])
     dictionary = get_label_dictionary(labels, keys)
-    return dictionary
+    classes = np.unique(labels[:,-1]).astype(int).tolist()
+    classes.insert(0, 0)
+    # classes = np.reshape(classes, (-1,))
+    print("unique classes: ", classes)
+    return dictionary, classes
 
 def show_labels(image, labels, ax=None):
     if ax is None:

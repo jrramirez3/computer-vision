@@ -18,9 +18,14 @@ from keras import backend as K
 from anchor import Anchor
 
 import layer_utils
+import label_utils
+import config
 
+import os
+import skimage
 import numpy as np
 import argparse
+from skimage.io import imread
 
 def conv2d(inputs,
            filters=32,
@@ -59,10 +64,9 @@ def conv_layer(inputs,
     return x
 
 def build_basenetwork(input_shape,
-                      output_shape=None,
                       name='base_network'):
 
-    channels = int(output_shape[-1])
+    channels = int(input_shape[-1])
 
     inputs = Input(shape=input_shape)
     conv1 = conv_layer(inputs,
@@ -288,12 +292,22 @@ def build_ssd(input_shape,
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    help_ = "Build model"
+    help_ = "Image to visualize"
+    parser.add_argument("--image",
+                        default = '1479506174991516375.jpg',
+                        help=help_)
     args = parser.parse_args()
-    input_shape = (300, 480, 3)
-    output_shape = (300,480, 3)
-    base = build_basenetwork(input_shape, output_shape)
+
+    image_path = os.path.join(config.params['data_path'], args.image)
+    image = skimage.img_as_float(imread(image_path))
+    input_shape = image.shape
+    base = build_basenetwork(input_shape)
     base.summary()
-    ssd = build_ssd4(input_shape, base)
+
+    csv_path = os.path.join(config.params['data_path'],
+                            config.params['train_labels'])
+    _, classes  = label_utils.build_label_dictionary(csv_path)
+    n_classes = len(classes)
+    ssd = build_ssd4(input_shape, base, n_classes=n_classes)
     ssd.summary()
     plot_model(ssd, to_file="ssd.png", show_shapes=True)

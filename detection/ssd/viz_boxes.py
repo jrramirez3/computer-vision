@@ -164,7 +164,7 @@ if __name__ == '__main__':
     if args.show_labels:
         csv_path = os.path.join(config.params['data_path'],
                                 config.params['train_labels'])
-        dictionary = label_utils.build_label_dictionary(csv_path)
+        dictionary, classes  = label_utils.build_label_dictionary(csv_path)
         labels = dictionary[args.image]
 
         # labels are made of bounding boxes and categories
