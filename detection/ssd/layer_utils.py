@@ -178,14 +178,14 @@ def maxiou(iou, anchors_array_shape, n_classes=6, anchors=None, labels=None):
     print(iou_rows)
     print(maxiou)
    
-    # mask Generation
-    gt_mask = np.zeros((iou.shape[0],4))
+    # mask generation
+    gt_mask = np.zeros((iou.shape[0], 4))
     gt_mask[maxiou_per_gt] = 1.0
     print("Mask uniques:", np.unique(gt_mask, return_counts=True))
     print("Mask Shape: ", gt_mask.shape)
     print("Mask[0]: ", gt_mask[maxiou_per_gt[0]])
 
-    # class Generation
+    # class generation
     gt_class = np.zeros((iou.shape[0], n_classes))
     gt_class[:, 0] = 1
     gt_class[maxiou_per_gt, 0] = 0
@@ -198,6 +198,17 @@ def maxiou(iou, anchors_array_shape, n_classes=6, anchors=None, labels=None):
     print("Class[0]: ", gt_class[0])
     for i in range(labels.shape[0]):
         print(gt_class[maxiou_per_gt[i]])
+
+
+    # offset generation
+    gt_offset = np.zeros((iou.shape[0], 4))
+    anchors = np.reshape(anchors, [-1, 4])
+    offsets = labels[0:4] - anchors[maxiou_per_gt]
+    gt_offset[maxiou_per_gt] = offsets
+    print("Offset Shape: ", gt_offset.shape)
+    print("Offset[0]: ", gt_offset[0])
+    for i in range(labels.shape[0]):
+        print(gt_offset[maxiou_per_gt[i]])
 
     
     maxiou_indexes = np.array(np.unravel_index(maxiou_per_gt, anchors_array_shape))
