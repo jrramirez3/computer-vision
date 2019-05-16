@@ -10,6 +10,7 @@ import numpy as np
 import tensorflow as tf
 from keras import backend as K
 from tensorflow.keras.layers import Layer
+from tensorflow.keras.utils import to_categorical
 
 def anchor_sizes():
     d = np.linspace(0.15, 0.8, 6)
@@ -147,9 +148,58 @@ def iou(boxes1, boxes2):
     return intersection_areas / union_areas
 
 
-def maxiou(iou, anchors_array_shape):
+def maxiou(iou, anchors_array_shape, n_classes=6, anchors=None, labels=None):
+    iou_mask = np.zeros(iou.shape)
     maxiou_per_gt = np.argmax(iou, axis=0)
+    print("IOU[0]: ", iou[maxiou_per_gt[0]])
+    iou_rows = np.argmax(iou[maxiou_per_gt], axis=1)
+    #maxiou = np.append(maxiou_per_gt, iou_rows, axis=1)
+    print("IOU Rows shape:", iou_rows.shape)
+    print("MaxIOU: ", maxiou_per_gt)
     print("MaxIOU shape: ", maxiou_per_gt.shape)
+    a = np.reshape(maxiou_per_gt, (maxiou_per_gt.shape[0], 1))
+    b = np.reshape(iou_rows, (iou_rows.shape[0], 1))
+    maxiou = np.append(a, b, axis=1)
+    print("maxiou shape: ", maxiou.shape)
+    # for i in range(maxiou.shape[0]):
+    #    iou_mask[maxiou[i][0], maxiou[i][1]]  = 1.0
+    iou_mask[maxiou[:,0], maxiou[:,1]]  = 1.0
+    print("IOU Mask[0]: ", iou_mask[maxiou_per_gt[0], iou_rows[0]])
+    print("IOU[0]: ", iou[maxiou_per_gt[0], iou_rows[0]])
+    print("IOU Mask uniques:", np.unique(iou_mask))
+    print("IOU Mask Shape: ", iou_mask.shape)
+    unique, counts = np.unique(iou_mask, return_counts=True)
+    d = dict(zip(unique, counts))
+    print("dict of counts: ", d)
+    masked_ious = np.multiply(iou, iou_mask)
+    print("Masked IOU:", np.unique(masked_ious))
+    # maxiou = np.reshape(maxiou, [-1, 2])
+    print(maxiou_per_gt)
+    print(iou_rows)
+    print(maxiou)
+   
+    # mask Generation
+    gt_mask = np.zeros((iou.shape[0],4))
+    gt_mask[maxiou_per_gt] = 1.0
+    print("Mask uniques:", np.unique(gt_mask, return_counts=True))
+    print("Mask Shape: ", gt_mask.shape)
+    print("Mask[0]: ", gt_mask[maxiou_per_gt[0]])
+
+    # class Generation
+    gt_class = np.zeros((iou.shape[0], n_classes))
+    gt_class[:, 0] = 1
+    gt_class[maxiou_per_gt, 0] = 0
+    maxiou_col = np.reshape(maxiou_per_gt, (maxiou_per_gt.shape[0], 1))
+    label_col = np.reshape(labels[:,4], (labels.shape[0], 1)).astype(int)
+    row_col = np.append(maxiou_col, label_col, axis=1)
+    gt_class[row_col[:,0], row_col[:,1]]  = 1.0
+    print("Class uniques:", np.unique(gt_class, return_counts=True))
+    print("Class Shape: ", gt_class.shape)
+    print("Class[0]: ", gt_class[0])
+    for i in range(labels.shape[0]):
+        print(gt_class[maxiou_per_gt[i]])
+
+    
     maxiou_indexes = np.array(np.unravel_index(maxiou_per_gt, anchors_array_shape))
     maxiou_per_gt = iou[maxiou_per_gt]
     print("MaxIOU GT shape: ", maxiou_per_gt.shape)

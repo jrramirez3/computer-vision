@@ -69,9 +69,10 @@ def show_anchors(image,
         if maxiou_per_gt is not None and labels is not None:
             # maxiou_per_gt[index] is row w/ max iou
             iou = np.amax(maxiou_per_gt[index])
+            #argmax_index = np.argmax(maxiou_per_gt[index])
+            #print(maxiou_per_gt[index])
             # offset
             label = labels[index]
-
             category = int(label[4])
             class_name = label_utils.index2class(category)
             color = label_utils.get_box_color(category)
@@ -88,7 +89,7 @@ def show_anchors(image,
             dxmax = label[1] - box[1]
             dymin = label[2] - box[2]
             dymax = label[3] - box[3]
-            print(index, ":", label[4], iou, dxmin, dxmax, dymin, dymax)
+            print(index, ":", "(", class_name, ")", iou, dxmin, dxmax, dymin, dymax)
 
     if labels is None:
         plt.show()
@@ -165,6 +166,7 @@ if __name__ == '__main__':
         csv_path = os.path.join(config.params['data_path'],
                                 config.params['train_labels'])
         dictionary, classes  = label_utils.build_label_dictionary(csv_path)
+        n_classes = len(classes)
         labels = dictionary[args.image]
 
         # labels are made of bounding boxes and categories
@@ -181,9 +183,12 @@ if __name__ == '__main__':
         print("Proposed anchors shape ", anchors_shape)
 
         iou = layer_utils.iou(anchors, boxes)
-        print("IOU shape:", iou.shape)
         maxiou_per_gt, maxiou_indexes = layer_utils.maxiou(iou,
-                                                           anchors_shape)
+                                                           anchors_shape,
+                                                           n_classes,
+                                                           anchors_,
+                                                           labels)
+        
         _, ax = show_anchors(image,
                              feature_shape,
                              anchors=anchors_,
