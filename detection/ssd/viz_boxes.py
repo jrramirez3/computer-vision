@@ -28,7 +28,7 @@ def show_anchors(image,
                  labels=None,
                  show_grids=False):
     image_height, image_width, _ = image.shape
-    batch_size, feature_height, feature_width, _ = feature_shape
+    _, feature_height, feature_width, _ = feature_shape
 
     fig, ax = plt.subplots(1)
     ax.imshow(image)
@@ -103,6 +103,7 @@ def feature_boxes(image, index):
     feature_height = image.shape[0] >> shift[index]
     feature_width = image.shape[1] >> shift[index]
     feature_shape = (1, feature_height, feature_width, image.shape[-1])
+    print("Feature shape:", feature_shape)
     boxes = layer_utils.anchor_boxes(feature_shape,
                                      image.shape,
                                      index=index,
@@ -179,8 +180,8 @@ if __name__ == '__main__':
         anchors = np.reshape(anchors, [-1, 4])
         print("GT labels shape ", labels.shape)
         print("GT boxes shape ", boxes.shape)
-        print("Complete proposed anchors shape ", anchors_.shape)
-        print("Proposed anchors shape ", anchors_shape)
+        print("Anchors shape ", anchors.shape)
+        print("Orig anchors shape ", anchors_.shape)
 
         iou = layer_utils.iou(anchors, boxes)
         maxiou_per_gt, maxiou_indexes = layer_utils.maxiou(iou,

@@ -44,11 +44,11 @@ def anchor_boxes(feature_shape,
     
     sizes = anchor_sizes()[index]
     aspect_ratios = anchor_aspect_ratios()
-    print("sizes: ", sizes)
-    print("aspect ratios: ", aspect_ratios)
+    #print("sizes: ", sizes)
+    #print("aspect ratios: ", aspect_ratios)
     n_boxes = len(aspect_ratios) + len(sizes) - 1
     image_height, image_width, _ = image_shape
-    batch_size, feature_height, feature_width, _ = feature_shape
+    _, feature_height, feature_width, _ = feature_shape
 
     norm_width = image_width * sizes[0]
     norm_height = image_height * sizes[0]
@@ -236,6 +236,12 @@ def get_gt_data(iou, n_classes=6, anchors=None, labels=None):
     # mask generation
     gt_mask = np.zeros((iou.shape[0], 4))
     gt_mask[maxiou_per_gt] = 1.0
+    #print("Mask uniques:", np.unique(gt_mask, return_counts=True))
+    #print("Mask Shape: ", gt_mask.shape)
+    #print("Mask[0]: ", gt_mask[0])
+    #for i in range(labels.shape[0]):
+    #    print(gt_mask[maxiou_per_gt[i]])
+
 
     # class generation
     gt_class = np.zeros((iou.shape[0], n_classes))
@@ -245,11 +251,21 @@ def get_gt_data(iou, n_classes=6, anchors=None, labels=None):
     label_col = np.reshape(labels[:,4], (labels.shape[0], 1)).astype(int)
     row_col = np.append(maxiou_col, label_col, axis=1)
     gt_class[row_col[:,0], row_col[:,1]]  = 1.0
+    #print("Class uniques:", np.unique(gt_class, return_counts=True))
+    #print("Class Shape: ", gt_class.shape)
+    #print("Class[0]: ", gt_class[0])
+    #for i in range(labels.shape[0]):
+    #    print(gt_class[maxiou_per_gt[i]])
+
 
     # offset generation
     gt_offset = np.zeros((iou.shape[0], 4))
     anchors = np.reshape(anchors, [-1, 4])
     offsets = labels[:,0:4] - anchors[maxiou_per_gt]
     gt_offset[maxiou_per_gt] = offsets
+    #print("Offset Shape: ", gt_offset.shape)
+    #print("Offset[0]: ", gt_offset[0])
+    #for i in range(labels.shape[0]):
+    #    print(gt_offset[maxiou_per_gt[i]])
 
     return gt_class, gt_offset, gt_mask

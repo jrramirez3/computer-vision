@@ -137,8 +137,7 @@ def build_ssd4(input_shape,
     #                  index=0,
     #                  name='anchors4')(offsets4)
 
-    shape = np.array(K.int_shape(offsets4))
-    feature_shape = shape[1:]
+    feature_shape = np.array(K.int_shape(offsets4))[1:]
     # print(K.int_shape(anchors4))
 
     # Reshape the class predictions, yielding 3D tensors of shape `(batch, height * width * n_anchors, n_classes)`
@@ -307,7 +306,13 @@ if __name__ == '__main__':
     train_generator = DataGenerator(params=config.params,
                                     input_shape=input_shape,
                                     feature_shape=feature_shape,
+                                    index=0,
                                     n_anchors=n_anchors,
                                     batch_size=32,
                                     shuffle=True)
+    x, y = train_generator.test(0)
+    print(x.shape)
+    print(y[0].shape)
+    print(y[1].shape)
+    print(y[2].shape)
     # plot_model(ssd, to_file="ssd.png", show_shapes=True)
