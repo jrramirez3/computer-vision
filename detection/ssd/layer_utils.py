@@ -12,6 +12,17 @@ from keras import backend as K
 from tensorflow.keras.layers import Layer
 from tensorflow.keras.utils import to_categorical
 
+def feature_boxes(image, feature_shape, index):
+    #shift = [4, 5, 6, 7, 8] # image div by 2**4 to 2**8
+    #feature_height = image.shape[0] >> shift[index]
+    #feature_width = image.shape[1] >> shift[index]
+    #feature_shape = (1, feature_height, feature_width, image.shape[-1])
+    boxes = anchor_boxes(feature_shape,
+                         image.shape,
+                         index=index,
+                         is_K_tensor=False)
+    return feature_shape, boxes
+
 def anchor_sizes():
     d = np.linspace(0.15, 0.8, 6)
     sizes = []
@@ -218,3 +229,27 @@ def maxiou(iou, anchors_array_shape, n_classes=6, anchors=None, labels=None):
     print("MaxIOU GT shape: ", maxiou_per_gt.shape)
     print("MaxIOU indexes shape: ", maxiou_indexes.shape)
     return maxiou_per_gt, maxiou_indexes
+
+
+def get_gt_data(iou, n_classes=6, anchors=None, labels=None):
+    maxiou_per_gt = np.argmax(iou, axis=0)
+    # mask generation
+    gt_mask = np.zeros((iou.shape[0], 4))
+    gt_mask[maxiou_per_gt] = 1.0
+
+    # class generation
+    gt_class = np.zeros((iou.shape[0], n_classes))
+    gt_class[:, 0] = 1
+    gt_class[maxiou_per_gt, 0] = 0
+    maxiou_col = np.reshape(maxiou_per_gt, (maxiou_per_gt.shape[0], 1))
+    label_col = np.reshape(labels[:,4], (labels.shape[0], 1)).astype(int)
+    row_col = np.append(maxiou_col, label_col, axis=1)
+    gt_class[row_col[:,0], row_col[:,1]]  = 1.0
+
+    # offset generation
+    gt_offset = np.zeros((iou.shape[0], 4))
+    anchors = np.reshape(anchors, [-1, 4])
+    offsets = labels[:,0:4] - anchors[maxiou_per_gt]
+    gt_offset[maxiou_per_gt] = offsets
+
+    return gt_class, gt_offset, gt_mask

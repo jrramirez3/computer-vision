@@ -189,6 +189,11 @@ if __name__ == '__main__':
                                                            anchors_,
                                                            labels)
         
+        layer_utils.get_gt_data(iou,
+                                n_classes,
+                                anchors_,
+                                labels)
+
         _, ax = show_anchors(image,
                              feature_shape,
                              anchors=anchors_,
