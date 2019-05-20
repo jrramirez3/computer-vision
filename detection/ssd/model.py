@@ -12,10 +12,9 @@ from tensorflow.keras.layers import BatchNormalization, Concatenate
 from tensorflow.keras.layers import ELU, MaxPooling2D, Reshape
 from tensorflow.keras.models import Model
 from tensorflow.keras.models import load_model
-from tensorflow.keras.layers import Concatenate
 from tensorflow.keras.utils import plot_model
-from keras import backend as K
-from anchor import Anchor
+from tensorflow.keras import backend as K
+# from anchor import Anchor
 
 import layer_utils
 import label_utils
@@ -25,9 +24,9 @@ import os
 import skimage
 import numpy as np
 import argparse
+
 from skimage.io import imread
 from data_generator import DataGenerator
-import config
 
 def conv2d(inputs,
            filters=32,
@@ -107,7 +106,7 @@ def build_basenetwork(input_shape,
                        postfix="7",
                        use_maxpool=True)
 
-    basenetwork = Model(inputs, [conv4, conv5, conv6, conv7], name=name)
+    basenetwork = Model(inputs, conv4, name=name)
 
     return basenetwork
 
@@ -120,7 +119,7 @@ def build_ssd4(input_shape,
     n_anchors = len(aspect_ratios) + len(sizes) - 1
 
     inputs = Input(shape=input_shape)
-    conv4, _, _, _= basenetwork(inputs)
+    conv4 = basenetwork(inputs)
 
     classes4  = conv2d(conv4,
                        n_anchors*n_classes,

@@ -15,31 +15,32 @@ import skimage
 from layer_utils import get_gt_data
 from skimage.io import imread
 from layer_utils import anchor_boxes
+import config
+from tensorflow.python.keras.utils.data_utils import Sequence
 
-class DataGenerator(keras.utils.Sequence):
+class DataGenerator(Sequence):
 
     def __init__(self,
-                 params={},
-                 data_split='train_labels',
+                 dictionary,
+                 n_classes,
+                 params=config.params,
                  input_shape=(300, 480, 3),
                  feature_shape=(1, 300, 480, 3),
                  index=0,
                  n_anchors=0,
                  batch_size=32,
                  shuffle=True):
+        self.dictionary = dictionary
+        self.n_classes = n_classes
+        self.keys = np.array(list(self.dictionary.keys()))
         self.params = params
         self.input_shape = input_shape
         self.feature_shape = (1, *feature_shape)
-        print("feature shape: ", self.feature_shape)
-        self.index = 0
+        # print("feature shape: ", self.feature_shape)
+        self.index = index
         self.n_anchors = n_anchors
         self.batch_size = batch_size
         self.shuffle = shuffle
-        csv_path = os.path.join(params['data_path'],
-                                params[data_split])
-        self.dictionary, classes = label_utils.build_label_dictionary(csv_path)
-        self.n_classes = len(classes)
-        self.keys = np.array(list(self.dictionary.keys()))
         self.on_epoch_end()
 
     def __len__(self):
@@ -67,10 +68,7 @@ class DataGenerator(keras.utils.Sequence):
             np.random.shuffle(self.keys)
 
     def __data_generation(self, keys):
-        'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
-
         data_path = self.params['data_path']
-        # Initialization
         x = np.empty((self.batch_size, *self.input_shape))
         n_boxes = np.prod(self.feature_shape) // self.n_anchors
         gt_class = np.empty((self.batch_size, n_boxes, self.n_classes))
@@ -94,10 +92,4 @@ class DataGenerator(keras.utils.Sequence):
                                                                 n_classes=self.n_classes,
                                                                 anchors=anchors,
                                                                 labels=labels)
-            #print(self.n_anchors)
-            #print(gt_class.shape)
-            #print(gt_offset.shape)
-            #print(gt_mask.shape)
-            
-
-        return x, [gt_class, gt_offset, gt_mask]
+        return x, [gt_class, gt_offset]
