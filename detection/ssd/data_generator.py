@@ -92,4 +92,5 @@ class DataGenerator(Sequence):
                                                                 n_classes=self.n_classes,
                                                                 anchors=anchors,
                                                                 labels=labels)
-        return x, [gt_class, gt_offset]
+        return x, [gt_class, np.concatenate((gt_offset, gt_mask), axis=-1)]
+        # return x, [gt_class, gt_offset]

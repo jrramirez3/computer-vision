@@ -146,6 +146,7 @@ def build_ssd4(input_shape,
     # Reshape the box coordinate predictions, yielding 3D tensors of shape `(batch, height * width * n_anchors, 4)`
     # We want the four box coordinates isolated in the last axis to compute the smooth L1 loss
     offsets4_reshaped = Reshape((-1, 4), name='offsets4_reshape')(offsets4)
+    offsets4_concat = Concatenate(axis=-1, name='offsets4_concat')([offsets4_reshaped, offsets4_reshaped])
 
     # Reshape the anchor coordinate predictions, yielding 3D tensors of shape `(batch, height * width * n_anchors, 4)`
     # anchors4_reshaped = Reshape((-1, 4), name='anchors4_reshape')(anchors4)
@@ -161,7 +162,7 @@ def build_ssd4(input_shape,
     # predictions = Concatenate(axis=2, name='predictions')([classes_softmax, boxes_concat])
     # predictions = Concatenate(axis=2, name='predictions')([classes_softmax, offsets_concat, anchors_concat])
     # predictions = [classes4_softmax, offsets4_reshaped, anchors4_reshaped]
-    predictions = [classes4_softmax, offsets4_reshaped]
+    predictions = [classes4_softmax, offsets4_concat]
     model = Model(inputs=inputs, outputs=predictions)
     return n_anchors, feature_shape, model
 

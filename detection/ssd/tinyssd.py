@@ -64,21 +64,24 @@ class TinySSD():
 
 
     def classes_loss(self, y_true, y_pred):
-        # y_true_class = y_true[0]
         return K.categorical_crossentropy(y_true, y_pred)
 
 
     def offset_loss(self, y_true, y_pred):
-        #y_true_offset = y_true[1]
-        #y_mask = y_true[2]
-        #y_true_offset *= y_mask
-        #y_pred *= y_mask
-        return K.mean(K.square(y_pred - y_true), axis=-1)
+        # y_true_offset = y_true[0]
+        offset = y_true[..., 0:4]
+        mask = y_true[..., 4:8]
+        pred = y_pred[..., 0:4]
+
+        offset *= mask
+        pred *= mask
+    
+        return K.mean(K.square(pred - offset), axis=-1)
         
 
     def train_model(self):
         optimizer = Adam(lr=1e-3)
-        loss = ['mse', 'mse']
+        loss = ['categorical_crossentropy', self.offset_loss]
         self.ssd.compile(optimizer=optimizer, loss=loss)
         self.ssd.fit_generator(generator=self.train_generator,
                                use_multiprocessing=True,
