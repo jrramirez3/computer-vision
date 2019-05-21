@@ -10,6 +10,7 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.utils import plot_model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import backend as K
+from tensorflow.keras.callbacks import ModelCheckpoint
 
 import layer_utils
 import label_utils
@@ -67,40 +68,49 @@ class TinySSD():
         return K.categorical_crossentropy(y_true, y_pred)
 
 
-    def offset_loss(self, y_true, y_pred):
-        # y_true_offset = y_true[0]
+    def offsets_loss(self, y_true, y_pred):
         offset = y_true[..., 0:4]
         mask = y_true[..., 4:8]
         pred = y_pred[..., 0:4]
-
         offset *= mask
         pred *= mask
-    
         return K.mean(K.square(pred - offset), axis=-1)
         
 
     def train_model(self):
         optimizer = Adam(lr=1e-3)
-        loss = ['categorical_crossentropy', self.offset_loss]
+        loss = ['categorical_crossentropy', self.offsets_loss]
         self.ssd.compile(optimizer=optimizer, loss=loss)
+
+        # prepare model model saving directory.
+        save_dir = os.path.join(os.getcwd(), 'saved_models')
+        model_name = 'tinyssd_weights-{epoch:03d}.h5'
+        if not os.path.isdir(save_dir):
+            os.makedirs(save_dir)
+        filepath = os.path.join(save_dir, model_name)
+
+        # prepare callbacks for model saving and for learning rate adjustment.
+        checkpoint = ModelCheckpoint(filepath=filepath,
+                                     verbose=1,
+                                     save_weights_only=True,
+                                     save_best_only=True)
+
+        callbacks = [checkpoint]
         self.ssd.fit_generator(generator=self.train_generator,
                                use_multiprocessing=True,
-                               workers=6)
+                               callbacks=callbacks,
+                               epochs=100,
+                               workers=16)
 
     def test_generator(self):
         x, y = self.train_generator.test(0)
         print(x.shape)
         print(y[0].shape)
         print(y[1].shape)
-        print(y[2].shape)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    help_ = "Image to visualize"
-    parser.add_argument("--image",
-                        default = '1479506174991516375.jpg',
-                        help=help_)
     args = parser.parse_args()
 
     tinyssd = TinySSD()
