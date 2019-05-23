@@ -44,26 +44,24 @@ class DataGenerator(Sequence):
         self.on_epoch_end()
 
     def __len__(self):
-        'Denotes the number of batches per epoch'
+        # number of batches per epoch
         return int(np.floor(len(self.dictionary) / self.batch_size))
 
     def __getitem__(self, index):
-        # Generate indexes of the batch
+        # indexes of the batch
         keys = self.keys[index*self.batch_size:(index+1)*self.batch_size]
-        # Generate data
         x, y = self.__data_generation(keys)
         return x, y
 
 
     def test(self, index):
-        # Generate indexes of the batch
+        # manual test
         keys = self.keys[index*self.batch_size:(index+1)*self.batch_size]
-        # Generate data
         x, y = self.__data_generation(keys)
         return x, y
 
     def on_epoch_end(self):
-        'Updates indexes after each epoch'
+        # shuffle after each epoch'
         if self.shuffle == True:
             np.random.shuffle(self.keys)
 

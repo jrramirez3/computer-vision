@@ -92,8 +92,7 @@ class TinySSD():
         # prepare callbacks for model saving and for learning rate adjustment.
         checkpoint = ModelCheckpoint(filepath=filepath,
                                      verbose=1,
-                                     save_weights_only=True,
-                                     save_best_only=True)
+                                     save_weights_only=True)
 
         callbacks = [checkpoint]
         self.ssd.fit_generator(generator=self.train_generator,
@@ -101,6 +100,43 @@ class TinySSD():
                                callbacks=callbacks,
                                epochs=100,
                                workers=16)
+
+    def load_weights(self, weights):
+        print("Loading weights : ", weights)
+        self.ssd.load_weights(weights)
+
+
+    def evaluate(self):
+        csv_path = os.path.join(config.params['data_path'],
+                                config.params['test_labels'])
+        self.test_dictionary, _ = build_label_dictionary(csv_path)
+        self.test_keys = np.array(list(self.test_dictionary.keys()))
+
+        for i in range(len(self.test_keys)):
+            image_path = os.path.join(config.params['data_path'],
+                                      self.keys[6])
+            print(image_path)
+            image = skimage.img_as_float(imread(image_path))
+            image = np.expand_dims(image, axis=0)
+            class_pred, offset_pred = self.ssd.predict(image)
+            class_pred = np.argmax(class_pred[0], axis=1)
+            print(class_pred.shape)
+            print(class_pred)
+            print(np.unique(class_pred, return_counts=True))
+            print(np.sum(class_pred))
+            for j in range(class_pred.shape[0]):
+                if class_pred[j] > 0:
+                    print(j, ":", label_utils.index2class(class_pred[j]))
+            # print(class_pred.shape)
+            return
+
+        for i in range(class_pred.shape[0]):
+            if class_pred[i][0] == 1:
+                continue
+            print(class_pred[i])
+        #print(offset_pred)
+        #print(class_pred)
+        #print(offset_pred)
 
     def test_generator(self):
         x, y = self.train_generator.test(0)
@@ -111,7 +147,22 @@ class TinySSD():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    help_ = "Load h5 model trained weights"
+    parser.add_argument("-w", "--weights", help=help_)
+    help_ = "Train model"
+    parser.add_argument("-t", "--train", action='store_true', help=help_)
+    help_ = "Evaluate model"
+    parser.add_argument("-e", "--evaluate", default=False, action='store_true', help=help_)
     args = parser.parse_args()
 
     tinyssd = TinySSD()
-    tinyssd.train_model()
+    if args.weights:
+        tinyssd.load_weights(args.weights)
+        if args.evaluate:
+            tinyssd.evaluate()
+            
+            
+    if args.train:
+        tinyssd.train_model()
+
+    
