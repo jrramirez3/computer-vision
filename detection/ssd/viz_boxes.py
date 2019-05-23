@@ -20,6 +20,45 @@ from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
 
 
+def show_boxes(image,
+               classes,
+               offsets=(),
+               index=0):
+    image = np.squeeze(image, axis=0)
+    feature_shape, anchors = feature_boxes(image, index)
+    anchors = np.reshape(anchors, [-1, 4])
+    fig, ax = plt.subplots(1)
+    ax.imshow(image)
+    for i in range(len(classes)):
+        if classes[i] > 0:
+            box = anchors[i] #batch, row, col, box
+            # default anchor box format is xmin, xmax, ymin, ymax
+            w = box[1] - box[0]
+            h = box[3] - box[2]
+            x = box[0]
+            y = box[2]
+            rect = Rectangle((x, y),
+                             w,
+                             h,
+                             linewidth=2,
+                             edgecolor='y',
+                             facecolor='none')
+            ax.add_patch(rect)
+            category = int(classes[i])
+            class_name = label_utils.index2class(category)
+            color = label_utils.get_box_color(category)
+            bbox = dict(facecolor=color, color=color, alpha=1.0)
+            ax.text(box[0],
+                    box[2],
+                    class_name,
+                    color='w',
+                    fontweight='bold',
+                    bbox=bbox,
+                    fontsize=8,
+                    verticalalignment='top')
+    plt.show()
+
+
 def show_anchors(image,
                  feature_shape,
                  anchors,

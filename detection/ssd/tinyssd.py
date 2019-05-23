@@ -25,6 +25,7 @@ from skimage.io import imread
 from data_generator import DataGenerator
 from model import build_basenetwork, build_ssd4
 from label_utils import build_label_dictionary
+from viz_boxes import show_boxes
 
 class TinySSD():
     def __init__(self,
@@ -106,37 +107,31 @@ class TinySSD():
         self.ssd.load_weights(weights)
 
 
-    def evaluate(self):
+    def evaluate(self, image_index=0):
         csv_path = os.path.join(config.params['data_path'],
                                 config.params['test_labels'])
         self.test_dictionary, _ = build_label_dictionary(csv_path)
         self.test_keys = np.array(list(self.test_dictionary.keys()))
 
-        for i in range(len(self.test_keys)):
-            image_path = os.path.join(config.params['data_path'],
-                                      self.keys[6])
-            print(image_path)
-            image = skimage.img_as_float(imread(image_path))
-            image = np.expand_dims(image, axis=0)
-            class_pred, offset_pred = self.ssd.predict(image)
-            class_pred = np.argmax(class_pred[0], axis=1)
-            print(class_pred.shape)
-            print(class_pred)
-            print(np.unique(class_pred, return_counts=True))
-            print(np.sum(class_pred))
-            for j in range(class_pred.shape[0]):
-                if class_pred[j] > 0:
-                    print(j, ":", label_utils.index2class(class_pred[j]))
-            # print(class_pred.shape)
-            return
+        image_path = os.path.join(config.params['data_path'],
+                                  self.keys[image_index])
+        print(image_path)
+        image = skimage.img_as_float(imread(image_path))
+        image = np.expand_dims(image, axis=0)
+        class_pred, offset_pred = self.ssd.predict(image)
+        class_pred = np.argmax(class_pred[0], axis=1)
+        print(class_pred.shape)
+        print(class_pred)
+        print(np.unique(class_pred, return_counts=True))
+        print(np.sum(class_pred))
+        show_boxes(image, class_pred)
 
-        for i in range(class_pred.shape[0]):
-            if class_pred[i][0] == 1:
-                continue
-            print(class_pred[i])
-        #print(offset_pred)
-        #print(class_pred)
-        #print(offset_pred)
+        #for j in range(class_pred.shape[0]):
+        #    if class_pred[j] > 0:
+        #            print(j, ":", label_utils.index2class(class_pred[j]))
+        #    # print(class_pred.shape)
+        #    return
+
 
     def test_generator(self):
         x, y = self.train_generator.test(0)
@@ -153,13 +148,19 @@ if __name__ == '__main__':
     parser.add_argument("-t", "--train", action='store_true', help=help_)
     help_ = "Evaluate model"
     parser.add_argument("-e", "--evaluate", default=False, action='store_true', help=help_)
+    help_ = "Image index"
+    parser.add_argument("--image_index",
+                        default=0,
+                        type=int,
+                        help=help_)
+
     args = parser.parse_args()
 
     tinyssd = TinySSD()
     if args.weights:
         tinyssd.load_weights(args.weights)
         if args.evaluate:
-            tinyssd.evaluate()
+            tinyssd.evaluate(args.image_index)
             
             
     if args.train:
