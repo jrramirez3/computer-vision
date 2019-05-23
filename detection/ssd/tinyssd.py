@@ -119,19 +119,10 @@ class TinySSD():
         image = skimage.img_as_float(imread(image_path))
         image = np.expand_dims(image, axis=0)
         class_pred, offset_pred = self.ssd.predict(image)
-        class_pred = np.argmax(class_pred[0], axis=1)
-        print(class_pred.shape)
-        print(class_pred)
-        print(np.unique(class_pred, return_counts=True))
-        print(np.sum(class_pred))
-        show_boxes(image, class_pred)
-
-        #for j in range(class_pred.shape[0]):
-        #    if class_pred[j] > 0:
-        #            print(j, ":", label_utils.index2class(class_pred[j]))
-        #    # print(class_pred.shape)
-        #    return
-
+        classes = np.argmax(class_pred[0], axis=1)
+        offsets = np.squeeze(offset_pred)
+        print(np.unique(classes, return_counts=True))
+        show_boxes(image, classes, offsets)
 
     def test_generator(self):
         x, y = self.train_generator.test(0)

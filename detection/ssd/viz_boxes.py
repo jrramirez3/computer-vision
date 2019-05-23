@@ -22,40 +22,44 @@ from matplotlib.lines import Line2D
 
 def show_boxes(image,
                classes,
-               offsets=(),
+               offsets,
                index=0):
+    nonbg = np.nonzero(classes)[0]
     image = np.squeeze(image, axis=0)
     feature_shape, anchors = feature_boxes(image, index)
     anchors = np.reshape(anchors, [-1, 4])
     fig, ax = plt.subplots(1)
     ax.imshow(image)
-    for i in range(len(classes)):
-        if classes[i] > 0:
-            box = anchors[i] #batch, row, col, box
-            # default anchor box format is xmin, xmax, ymin, ymax
-            w = box[1] - box[0]
-            h = box[3] - box[2]
-            x = box[0]
-            y = box[2]
-            rect = Rectangle((x, y),
-                             w,
-                             h,
-                             linewidth=2,
-                             edgecolor='y',
-                             facecolor='none')
-            ax.add_patch(rect)
-            category = int(classes[i])
-            class_name = label_utils.index2class(category)
-            color = label_utils.get_box_color(category)
-            bbox = dict(facecolor=color, color=color, alpha=1.0)
-            ax.text(box[0],
-                    box[2],
-                    class_name,
-                    color='w',
-                    fontweight='bold',
-                    bbox=bbox,
-                    fontsize=8,
-                    verticalalignment='top')
+    for i in range(len(nonbg)):
+        idx = nonbg[i]
+        box = anchors[idx] #batch, row, col, box
+        offset = offsets[idx]
+        for j in range(4):
+            box[j] += offset[j]
+        # default anchor box format is xmin, xmax, ymin, ymax
+        w = box[1] - box[0]
+        h = box[3] - box[2]
+        x = box[0]
+        y = box[2]
+        category = int(classes[idx])
+        color = label_utils.get_box_color(category)
+        rect = Rectangle((x, y),
+                         w,
+                         h,
+                         linewidth=2,
+                         edgecolor=color,
+                         facecolor='none')
+        ax.add_patch(rect)
+        class_name = label_utils.index2class(category)
+        bbox = dict(color=color, alpha=1.0)
+        #ax.text(box[0],
+        #        box[2],
+        #        class_name,
+        #        color='w',
+        #        fontweight='bold',
+        #        bbox=bbox,
+        #        fontsize=8,
+        #        verticalalignment='top')
     plt.show()
 
 
