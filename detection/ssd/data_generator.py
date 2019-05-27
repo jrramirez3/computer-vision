@@ -86,9 +86,11 @@ class DataGenerator(Sequence):
             labels = np.array(labels)
             boxes = labels[:,0:-1]
             iou = layer_utils.iou(anchors, boxes)
-            gt_class[i], gt_offset[i], gt_mask[i] = get_gt_data(iou,
-                                                                n_classes=self.n_classes,
-                                                                anchors=anchors,
-                                                                labels=labels)
+            ret  = get_gt_data(iou,
+                               n_classes=self.n_classes,
+                               anchors=anchors,
+                               labels=labels)
+            gt_class[i], gt_offset[i], gt_mask[i] = ret
+
         return x, [gt_class, np.concatenate((gt_offset, gt_mask), axis=-1)]
         # return x, [gt_class, gt_offset]
