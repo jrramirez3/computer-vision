@@ -34,24 +34,28 @@ class TinySSD():
         self.build_model()
 
     def build_model(self):
-
+        # load dataset path
         csv_path = os.path.join(config.params['data_path'],
                                 config.params['train_labels'])
+
+        # build dictionary and key
         self.dictionary, self.classes  = build_label_dictionary(csv_path)
         self.n_classes = len(self.classes)
         self.keys = np.array(list(self.dictionary.keys()))
 
+        # load 1st image and build base network
         image_path = os.path.join(config.params['data_path'],
                                   self.keys[0])
         image = skimage.img_as_float(imread(image_path))
         self.input_shape = image.shape
-        base = build_basenetwork(self.input_shape)
-        base.summary()
+        basenetwork = build_basenetwork(self.input_shape)
+        basenetwork.summary()
 
         # n_anchors = num of anchors per feature point (eg 4)
-        self.n_anchors, self.feature_shape, self.ssd = build_ssd4(self.input_shape,
-                                                             base,
-                                                             n_classes=self.n_classes)
+        ret = build_ssd4(self.input_shape,
+                         basenetwork,
+                         n_classes=self.n_classes)
+        self.n_anchors, self.feature_shape, self.ssd = ret
         self.ssd.summary()
         # print(feature_shape)
         self.train_generator = DataGenerator(dictionary=self.dictionary,
@@ -115,12 +119,12 @@ class TinySSD():
 
         image_path = os.path.join(config.params['data_path'],
                                   self.keys[image_index])
-        print(image_path)
         image = skimage.img_as_float(imread(image_path))
         image = np.expand_dims(image, axis=0)
-        class_pred, offset_pred = self.ssd.predict(image)
-        classes = np.argmax(class_pred[0], axis=1)
-        offsets = np.squeeze(offset_pred)
+        classes, offsets = self.ssd.predict(image)
+        image = np.squeeze(image, axis=0)
+        classes = np.argmax(classes[0], axis=1)
+        offsets = np.squeeze(offsets)
         print(np.unique(classes, return_counts=True))
         show_boxes(image, classes, offsets)
 

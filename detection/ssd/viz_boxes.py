@@ -25,7 +25,6 @@ def show_boxes(image,
                offsets,
                index=0):
     nonbg = np.nonzero(classes)[0]
-    image = np.squeeze(image, axis=0)
     feature_shape, anchors = feature_boxes(image, index)
     anchors = np.reshape(anchors, [-1, 4])
     fig, ax = plt.subplots(1)
