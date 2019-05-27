@@ -79,7 +79,7 @@ class TinySSD():
         pred = y_pred[..., 0:4]
         offset *= mask
         pred *= mask
-        return K.mean(K.square(pred - offset), axis=-1)
+        return K.mean(K.abs(pred - offset), axis=-1)
         
 
     def train_model(self):
