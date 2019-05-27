@@ -87,7 +87,7 @@ def build_basenetwork(input_shape,
                        postfix="3")
 
     conv4 = conv_layer(conv3,
-                       64,
+                       128,
                        kernel_size=3,
                        postfix="4")
     
@@ -97,7 +97,7 @@ def build_basenetwork(input_shape,
                        postfix="5")
     
     conv6 = conv_layer(conv5,
-                       128,
+                       256,
                        kernel_size=3,
                        postfix="6")
     
