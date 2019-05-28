@@ -140,7 +140,7 @@ class TinySSD():
         classes = np.argmax(classes[0], axis=1)
         offsets = np.squeeze(offsets)
         print(np.unique(classes, return_counts=True))
-        show_boxes(image, classes, offsets)
+        show_boxes(image, classes, offsets, self.feature_shapes)
 
     def test_generator(self):
         x, y = self.train_generator.test(0)

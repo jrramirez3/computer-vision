@@ -18,15 +18,28 @@ import config
 from skimage.io import imread
 from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
+from layer_utils import anchor_boxes
 
 
 def show_boxes(image,
                classes,
                offsets,
-               index=0):
+               feature_shapes):
     nonbg = np.nonzero(classes)[0]
-    feature_shape, anchors = feature_boxes(image, index)
-    anchors = np.reshape(anchors, [-1, 4])
+    n_layers = len(feature_shapes)
+    anchors = []
+    for index, shape in enumerate(feature_shapes):
+        shape = (1, *shape)
+        anchor = anchor_boxes(shape,
+                              image.shape,
+                              index=index)
+        anchor = np.reshape(anchor, [-1, 4])
+        if index == 0:
+            anchors = anchor
+        else:
+            anchors = np.concatenate((anchors, anchor), axis=0)
+
+    print(anchors.shape)
     fig, ax = plt.subplots(1)
     ax.imshow(image)
     for i in range(len(nonbg)):
@@ -141,10 +154,8 @@ def show_anchors(image,
 
 
 def feature_boxes(image, index):
-    shift = [4, 5, 6, 7, 8] # image div by 2**4 to 2**8
-    feature_height = image.shape[0] >> shift[index]
-    feature_width = image.shape[1] >> shift[index]
-    feature_shape = (1, feature_height, feature_width, image.shape[-1])
+    print("")
+    feature_shape = (1,1)
     print("Feature shape:", feature_shape)
     boxes = layer_utils.anchor_boxes(feature_shape,
                                      image.shape,
