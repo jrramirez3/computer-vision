@@ -177,12 +177,16 @@ def build_ssd(input_shape,
 
         out_cls.append(classes)
 
-    name = "offsets"
-    offsets = Concatenate(axis=1,
-                          name=name)(out_off)
-    name = "classes"
-    classes = Concatenate(axis=1,
-                          name=name)(out_cls)
+    if n_layers > 1:
+        name = "offsets"
+        offsets = Concatenate(axis=1,
+                              name=name)(out_off)
+        name = "classes"
+        classes = Concatenate(axis=1,
+                              name=name)(out_cls)
+    else:
+        offsets = out_off[0]
+        classes = out_cls[0]
 
     outputs = [classes, offsets]
 

@@ -57,15 +57,16 @@ class TinySSD():
                         n_layers=self.n_layers,
                         n_classes=self.n_classes)
         self.n_anchors, self.feature_shapes, self.ssd = ret
+        
         self.ssd.summary()
-        return
+        #print(self.n_anchors)
+        #print(self.feature_shapes)
         # print(feature_shape)
         self.train_generator = DataGenerator(dictionary=self.dictionary,
                                              n_classes=self.n_classes,
                                              params=config.params,
                                              input_shape=self.input_shape,
                                              feature_shapes=self.feature_shapes,
-                                             index=0,
                                              n_anchors=self.n_anchors,
                                              batch_size=32,
                                              shuffle=True)

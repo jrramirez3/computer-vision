@@ -39,8 +39,7 @@ def anchor_aspect_ratios():
 def anchor_boxes(feature_shape,
                  image_shape,
                  index=0,
-                 x=None,
-                 is_K_tensor=True):
+                 is_K_tensor=False):
     
     sizes = anchor_sizes()[index]
     aspect_ratios = anchor_aspect_ratios()
