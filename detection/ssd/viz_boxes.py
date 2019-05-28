@@ -63,15 +63,15 @@ def show_boxes(image,
                          facecolor='none')
         ax.add_patch(rect)
         class_name = label_utils.index2class(category)
-        bbox = dict(color=color, alpha=1.0)
-        #ax.text(box[0],
-        #        box[2],
-        #        class_name,
-        #        color='w',
-        #        fontweight='bold',
-        #        bbox=bbox,
-        #        fontsize=8,
-        #        verticalalignment='top')
+        bbox = dict(color='none', alpha=1.0)
+        ax.text(box[0]+2,
+                box[2]-16,
+                class_name,
+                color=color,
+                fontweight='bold',
+                bbox=bbox,
+                fontsize=8,
+                verticalalignment='top')
     plt.show()
 
 

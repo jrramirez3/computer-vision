@@ -14,7 +14,6 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.models import load_model
 from tensorflow.keras.utils import plot_model
 from tensorflow.keras import backend as K
-# from anchor import Anchor
 
 import layer_utils
 import label_utils
@@ -68,7 +67,8 @@ def conv_layer(inputs,
 def build_basenetwork(input_shape,
                       n_layers=1,
                       name='base_network'):
-
+    # basic base network
+    # the backbone is just a 3-layer convnet
     inputs = Input(shape=input_shape)
     conv1 = conv_layer(inputs,
                        32,
@@ -126,14 +126,19 @@ def build_ssd(input_shape,
     n_anchors = len(aspect_ratios) + len(sizes) - 1
 
     inputs = Input(shape=input_shape)
+    # no. of base_outputs depends on n_layers
     base_outputs = basenetwork(inputs)
-    print(base_outputs)
+    
+    # print(base_outputs)
     outputs = []
     feature_shapes = []
     out_cls = []
     out_off = []
 
     for i in range(n_layers):
+        # each conv layer from basenetwork is used
+        # as feature maps for class and offset predictions
+        # also known as multi-scale predictions
         conv = base_outputs if n_layers==1 else base_outputs[i]
         name = "cls" + str(i+1)
         classes  = conv2d(conv,
@@ -141,7 +146,7 @@ def build_ssd(input_shape,
                           kernel_size=3,
                           name=name)
 
-        # `offsets`: `(batch, height, width, n_anchors * 4)`
+        # offsets: (batch, height, width, n_anchors * 4)
         name = "off" + str(i+1)
         offsets  = conv2d(conv,
                           n_anchors*4,
@@ -152,15 +157,15 @@ def build_ssd(input_shape,
         feature_shapes.append(shape)
 
         # reshape the class predictions, yielding 3D tensors of 
-        # shape `(batch, height * width * n_anchors, n_classes)`
+        # shape (batch, height * width * n_anchors, n_classes)
         # last axis to perform softmax on them
         name = "cls_res" + str(i+1)
         classes = Reshape((-1, n_classes), 
                           name=name)(classes)
 
         # reshape the offset predictions, yielding 3D tensors of
-        # shape `(batch, height * width * n_anchors, 4)`
-        # last axis to compute the smooth L1 or L2 loss
+        # shape (batch, height * width * n_anchors, 4)
+        # last axis to compute the (smooth) L1 or L2 loss
         name = "off_res" + str(i+1)
         offsets = Reshape((-1, 4),
                           name=name)(offsets)
@@ -169,15 +174,18 @@ def build_ssd(input_shape,
         offsets = Concatenate(axis=-1,
                               name=name)(offsets)
 
+        # collect offset prediction per scale
         out_off.append(offsets)
 
         name = "cls_out" + str(i+1)
         classes = Activation('softmax',
                              name=name)(classes)
 
+        # collect class prediction per scale
         out_cls.append(classes)
 
     if n_layers > 1:
+        # concat all class and offset from each scale
         name = "offsets"
         offsets = Concatenate(axis=1,
                               name=name)(out_off)
@@ -189,10 +197,6 @@ def build_ssd(input_shape,
         classes = out_cls[0]
 
     outputs = [classes, offsets]
-
-    # predictions = [classes, offsets]
-    # outputs.append(predictions)
-
     model = Model(inputs=inputs, outputs=outputs)
 
     return n_anchors, feature_shapes, model
