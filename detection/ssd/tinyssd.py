@@ -56,7 +56,7 @@ class TinySSD():
                         basenetwork,
                         n_layers=self.n_layers,
                         n_classes=self.n_classes)
-        self.n_anchors, self.feature_shape, self.ssd = ret
+        self.n_anchors, self.feature_shapes, self.ssd = ret
         self.ssd.summary()
         return
         # print(feature_shape)
@@ -64,7 +64,7 @@ class TinySSD():
                                              n_classes=self.n_classes,
                                              params=config.params,
                                              input_shape=self.input_shape,
-                                             feature_shape=self.feature_shape,
+                                             feature_shapes=self.feature_shapes,
                                              index=0,
                                              n_anchors=self.n_anchors,
                                              batch_size=32,

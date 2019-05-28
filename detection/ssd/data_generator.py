@@ -25,8 +25,7 @@ class DataGenerator(Sequence):
                  n_classes,
                  params=config.params,
                  input_shape=(300, 480, 3),
-                 feature_shape=(1, 300, 480, 3),
-                 index=0,
+                 feature_shapes=[],
                  n_anchors=0,
                  batch_size=32,
                  shuffle=True):
@@ -35,7 +34,8 @@ class DataGenerator(Sequence):
         self.keys = np.array(list(self.dictionary.keys()))
         self.params = params
         self.input_shape = input_shape
-        self.feature_shape = (1, *feature_shape)
+        self.feature_shapes = feature_shapes
+        # self.feature_shape = (1, *feature_shape)
         # print("feature shape: ", self.feature_shape)
         self.index = index
         self.n_anchors = n_anchors
@@ -43,27 +43,26 @@ class DataGenerator(Sequence):
         self.shuffle = shuffle
         self.on_epoch_end()
 
+
     def __len__(self):
         # number of batches per epoch
         return int(np.floor(len(self.dictionary) / self.batch_size))
 
+
     def __getitem__(self, index):
         # indexes of the batch
-        keys = self.keys[index*self.batch_size:(index+1)*self.batch_size]
+        start_index = index * self.batch_size
+        end_index = (index+1) * self.batch_size
+        keys = self.keys[start_index : end_index]
         x, y = self.__data_generation(keys)
         return x, y
 
-
-    def test(self, index):
-        # manual test
-        keys = self.keys[index*self.batch_size:(index+1)*self.batch_size]
-        x, y = self.__data_generation(keys)
-        return x, y
 
     def on_epoch_end(self):
         # shuffle after each epoch'
         if self.shuffle == True:
             np.random.shuffle(self.keys)
+
 
     def __data_generation(self, keys):
         data_path = self.params['data_path']
@@ -73,6 +72,7 @@ class DataGenerator(Sequence):
         gt_offset = np.empty((self.batch_size, n_boxes, 4))
         gt_mask = np.empty((self.batch_size, n_boxes, 4))
 
+        y = []
         for i, key in enumerate(keys):
             image_path = os.path.join(data_path, key)
             image = skimage.img_as_float(imread(image_path))
@@ -91,6 +91,8 @@ class DataGenerator(Sequence):
                                anchors=anchors,
                                labels=labels)
             gt_class[i], gt_offset[i], gt_mask[i] = ret
+            y_ = [gt_class, np.concatenate((gt_offset, gt_mask), axis=-1)]
+            y.append(y_)
 
-        return x, [gt_class, np.concatenate((gt_offset, gt_mask), axis=-1)]
-        # return x, [gt_class, gt_offset]
+        return x, y
+        # return x, [gt_class, np.concatenate((gt_offset, gt_mask), axis=-1)]

@@ -130,6 +130,8 @@ def build_ssd(input_shape,
     print(base_outputs)
     outputs = []
     feature_shapes = []
+    out_cls = []
+    out_off = []
 
     for i in range(n_layers):
         conv = base_outputs if n_layers==1 else base_outputs[i]
@@ -167,13 +169,25 @@ def build_ssd(input_shape,
         offsets = Concatenate(axis=-1,
                               name=name)(offsets)
 
+        out_off.append(offsets)
 
         name = "cls_out" + str(i+1)
         classes = Activation('softmax',
                              name=name)(classes)
 
-        predictions = [classes, offsets]
-        outputs.append(predictions)
+        out_cls.append(classes)
+
+    name = "offsets"
+    offsets = Concatenate(axis=1,
+                          name=name)(out_off)
+    name = "classes"
+    classes = Concatenate(axis=1,
+                          name=name)(out_cls)
+
+    outputs = [classes, offsets]
+
+    # predictions = [classes, offsets]
+    # outputs.append(predictions)
 
     model = Model(inputs=inputs, outputs=outputs)
 
