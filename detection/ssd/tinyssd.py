@@ -33,15 +33,7 @@ class TinySSD():
         self.build_model()
 
     def build_model(self):
-        # load dataset path
-        csv_path = os.path.join(config.params['data_path'],
-                                config.params['train_labels'])
-
-        # build dictionary and key
-        self.dictionary, self.classes  = build_label_dictionary(csv_path)
-        self.n_classes = len(self.classes)
-        self.keys = np.array(list(self.dictionary.keys()))
-
+        self.build_dictionary()
         # load 1st image and build base network
         image_path = os.path.join(config.params['data_path'],
                                   self.keys[0])
@@ -59,9 +51,6 @@ class TinySSD():
         self.n_anchors, self.feature_shapes, self.ssd = ret
         
         self.ssd.summary()
-        #print(self.n_anchors)
-        #print(self.feature_shapes)
-        # print(feature_shape)
         self.train_generator = DataGenerator(dictionary=self.dictionary,
                                              n_classes=self.n_classes,
                                              params=config.params,
@@ -70,6 +59,31 @@ class TinySSD():
                                              n_anchors=self.n_anchors,
                                              batch_size=32,
                                              shuffle=True)
+
+        self.test_generator = DataGenerator(dictionary=self.test_dictionary,
+                                            n_classes=self.n_classes,
+                                            params=config.params,
+                                            input_shape=self.input_shape,
+                                            feature_shapes=self.feature_shapes,
+                                            n_anchors=self.n_anchors,
+                                            batch_size=32,
+                                            shuffle=True)
+
+
+    def build_dictionary(self):
+        # load dataset path
+        csv_path = os.path.join(config.params['data_path'],
+                                config.params['train_labels'])
+
+        # build dictionary and key
+        self.dictionary, self.classes  = build_label_dictionary(csv_path)
+        self.n_classes = len(self.classes)
+        self.keys = np.array(list(self.dictionary.keys()))
+
+        csv_path = os.path.join(config.params['data_path'],
+                                config.params['test_labels'])
+        self.test_dictionary, _ = build_label_dictionary(csv_path)
+        self.test_keys = np.array(list(self.test_dictionary.keys()))
 
 
     def classes_loss(self, y_true, y_pred):
@@ -105,6 +119,7 @@ class TinySSD():
 
         callbacks = [checkpoint]
         self.ssd.fit_generator(generator=self.train_generator,
+                               validation_data=self.test_generator,
                                use_multiprocessing=True,
                                callbacks=callbacks,
                                epochs=100,
@@ -116,13 +131,8 @@ class TinySSD():
 
 
     def evaluate(self, image_index=0):
-        csv_path = os.path.join(config.params['data_path'],
-                                config.params['test_labels'])
-        self.test_dictionary, _ = build_label_dictionary(csv_path)
-        self.test_keys = np.array(list(self.test_dictionary.keys()))
-
         image_path = os.path.join(config.params['data_path'],
-                                  self.keys[image_index])
+                                  self.test_keys[image_index])
         image = skimage.img_as_float(imread(image_path))
         image = np.expand_dims(image, axis=0)
         classes, offsets = self.ssd.predict(image)
