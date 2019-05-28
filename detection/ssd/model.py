@@ -66,56 +66,57 @@ def conv_layer(inputs,
 
 
 def build_basenetwork(input_shape,
+                      n_layers=1,
                       name='base_network'):
-
-    # channels = int(input_shape[-1])
 
     inputs = Input(shape=input_shape)
     conv1 = conv_layer(inputs,
                        32,
                        kernel_size=5,
+                       strides=2,
+                       use_maxpool=False,
                        postfix="1")
 
     conv2 = conv_layer(conv1,
                        64,
                        kernel_size=3,
+                       strides=2,
+                       use_maxpool=False,
                        postfix="2")
 
     conv3 = conv_layer(conv2,
                        64,
                        kernel_size=3,
+                       strides=2,
+                       use_maxpool=False,
                        postfix="3")
 
-    conv4 = conv_layer(conv3,
-                       128,
-                       kernel_size=3,
-                       postfix="4")
-    
-    conv5 = conv_layer(conv4,
-                       128,
-                       kernel_size=3,
-                       postfix="5")
-    
-    conv6 = conv_layer(conv5,
-                       256,
-                       kernel_size=3,
-                       postfix="6")
-    
-    conv7 = conv_layer(conv6,
-                       256,
-                       kernel_size=3,
-                       postfix="7",
-                       use_maxpool=True)
+    outputs = []
+    prev_conv = conv3
+    n_filters = 64
 
-    basenetwork = Model(inputs, conv4, name=name)
+    for i in range(n_layers):
+        postfix = "_layer" + str(i+1)
+        conv = conv_layer(prev_conv,
+                          n_filters,
+                          kernel_size=3,
+                          strides=2,
+                          use_maxpool=False,
+                          postfix=postfix)
+        outputs.append(conv)
+        prev_conv = conv
+        n_filters *= 2
+    
+    basenetwork = Model(inputs, outputs, name=name)
 
     return basenetwork
 
 
 
-def build_ssd4(input_shape,
-               basenetwork,
-               n_classes=6):
+def build_ssd(input_shape,
+              basenetwork,
+              n_layers=1,
+              n_classes=6):
     # 6 classes = (background, car, truck, 
     # pedestrian, traffic light, street light)
     sizes = layer_utils.anchor_sizes()[0]
@@ -125,47 +126,61 @@ def build_ssd4(input_shape,
     n_anchors = len(aspect_ratios) + len(sizes) - 1
 
     inputs = Input(shape=input_shape)
-    conv4 = basenetwork(inputs)
+    base_outputs = basenetwork(inputs)
+    print(base_outputs)
+    outputs = []
+    feature_shapes = []
 
-    classes4  = conv2d(conv4,
-                       n_anchors*n_classes,
-                       kernel_size=3,
-                       name='cls4')
+    for i in range(n_layers):
+        conv = base_outputs if n_layers==1 else base_outputs[i]
+        name = "cls" + str(i+1)
+        classes  = conv2d(conv,
+                          n_anchors*n_classes,
+                          kernel_size=3,
+                          name=name)
 
-    # `offsets`: `(batch, height, width, n_anchors * 4)`
-    offsets4  = conv2d(conv4,
-                       n_anchors*4,
-                       kernel_size=3,
-                       name='off4')
+        # `offsets`: `(batch, height, width, n_anchors * 4)`
+        name = "off" + str(i+1)
+        offsets  = conv2d(conv,
+                          n_anchors*4,
+                          kernel_size=3,
+                          name=name)
 
-    feature_shape = np.array(K.int_shape(offsets4))[1:]
+        shape = np.array(K.int_shape(offsets))[1:]
+        feature_shapes.append(shape)
 
-    # reshape the class predictions, yielding 3D tensors of 
-    # shape `(batch, height * width * n_anchors, n_classes)`
-    # last axis to perform softmax on them
-    classes4_reshaped = Reshape((-1, n_classes), 
-                                name='cls4_res')(classes4)
+        # reshape the class predictions, yielding 3D tensors of 
+        # shape `(batch, height * width * n_anchors, n_classes)`
+        # last axis to perform softmax on them
+        name = "cls_res" + str(i+1)
+        classes = Reshape((-1, n_classes), 
+                          name=name)(classes)
 
-    # reshape the offset predictions, yielding 3D tensors of
-    # shape `(batch, height * width * n_anchors, 4)`
-    # last axis to compute the smooth L1 or L2 loss
-    offsets4_reshaped = Reshape((-1, 4),
-                                name='off4_res')(offsets4)
-    offsets4_input = [offsets4_reshaped, offsets4_reshaped]
-    offsets4_concat = Concatenate(axis=-1,
-                                  name='off4_con')(offsets4_input)
-
-
-    classes4_softmax = Activation('softmax',
-                                  name='clss_sof')(classes4_reshaped)
-
-    predictions = [classes4_softmax, offsets4_concat]
-    model = Model(inputs=inputs, outputs=predictions)
-    return n_anchors, feature_shape, model
+        # reshape the offset predictions, yielding 3D tensors of
+        # shape `(batch, height * width * n_anchors, 4)`
+        # last axis to compute the smooth L1 or L2 loss
+        name = "off_res" + str(i+1)
+        offsets = Reshape((-1, 4),
+                          name=name)(offsets)
+        offsets = [offsets, offsets]
+        name = "off_cat" + str(i+1)
+        offsets = Concatenate(axis=-1,
+                              name=name)(offsets)
 
 
+        name = "cls_out" + str(i+1)
+        classes = Activation('softmax',
+                             name=name)(classes)
 
-def build_ssd(input_shape,
+        predictions = [classes, offsets]
+        outputs.append(predictions)
+
+    model = Model(inputs=inputs, outputs=outputs)
+
+    return n_anchors, feature_shapes, model
+
+
+def build_ssd_orig(input_shape,
               basenetwork,
               n_classes=5):
     sizes = layer_utils.anchor_sizes()

@@ -23,14 +23,13 @@ import argparse
 
 from skimage.io import imread
 from data_generator import DataGenerator
-from model import build_basenetwork, build_ssd4
+from model import build_basenetwork, build_ssd
 from label_utils import build_label_dictionary
 from viz_boxes import show_boxes
 
 class TinySSD():
-    def __init__(self,
-                 index=0):
-
+    def __init__(self, n_layers=1):
+        self.n_layers = n_layers
         self.build_model()
 
     def build_model(self):
@@ -48,15 +47,18 @@ class TinySSD():
                                   self.keys[0])
         image = skimage.img_as_float(imread(image_path))
         self.input_shape = image.shape
-        basenetwork = build_basenetwork(self.input_shape)
+        basenetwork = build_basenetwork(self.input_shape,
+                                        n_layers=self.n_layers)
         basenetwork.summary()
 
         # n_anchors = num of anchors per feature point (eg 4)
-        ret = build_ssd4(self.input_shape,
-                         basenetwork,
-                         n_classes=self.n_classes)
+        ret = build_ssd(self.input_shape,
+                        basenetwork,
+                        n_layers=self.n_layers,
+                        n_classes=self.n_classes)
         self.n_anchors, self.feature_shape, self.ssd = ret
         self.ssd.summary()
+        return
         # print(feature_shape)
         self.train_generator = DataGenerator(dictionary=self.dictionary,
                                              n_classes=self.n_classes,
@@ -89,7 +91,8 @@ class TinySSD():
 
         # prepare model model saving directory.
         save_dir = os.path.join(os.getcwd(), 'saved_models')
-        model_name = 'tinyssd_weights-{epoch:03d}.h5'
+        model_name = 'tinyssd_' + str(self.n_layers)
+        model_name +=  '-layer_weights-{epoch:03d}.h5'
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
         filepath = os.path.join(save_dir, model_name)
@@ -148,10 +151,16 @@ if __name__ == '__main__':
                         default=0,
                         type=int,
                         help=help_)
+    help_ = "Number of layers"
+    parser.add_argument("-l",
+                        "--layers",
+                        default=1,
+                        type=int,
+                        help=help_)
 
     args = parser.parse_args()
 
-    tinyssd = TinySSD()
+    tinyssd = TinySSD(n_layers=args.layers)
     if args.weights:
         tinyssd.load_weights(args.weights)
         if args.evaluate:
