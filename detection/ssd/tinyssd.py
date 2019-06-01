@@ -28,8 +28,15 @@ from label_utils import build_label_dictionary
 from viz_boxes import show_boxes
 
 class TinySSD():
-    def __init__(self, n_layers=1):
+    def __init__(self,
+                 n_layers=1,
+                 batch_size=32,
+                 epochs=100,
+                 workers=16):
         self.n_layers = n_layers
+        self.batch_size = batch_size
+        self.epochs = epochs
+        self.workers = workers
         self.build_model()
 
     def build_model(self):
@@ -43,30 +50,34 @@ class TinySSD():
                                         n_layers=self.n_layers)
         basenetwork.summary()
 
-        # n_anchors = num of anchors per feature point (eg 4)
         ret = build_ssd(self.input_shape,
                         basenetwork,
                         n_layers=self.n_layers,
                         n_classes=self.n_classes)
+        # n_anchors = num of anchors per feature point (eg 4)
+        # feature_shapes is the feature map shape
+        # feature map - basis of class and offset predictions
         self.n_anchors, self.feature_shapes, self.ssd = ret
-        
         self.ssd.summary()
+
+        # multi-thread train data generator
         self.train_generator = DataGenerator(dictionary=self.dictionary,
                                              n_classes=self.n_classes,
                                              params=config.params,
                                              input_shape=self.input_shape,
                                              feature_shapes=self.feature_shapes,
                                              n_anchors=self.n_anchors,
-                                             batch_size=32,
+                                             batch_size=self.batch_size,
                                              shuffle=True)
 
+        # multi-thread test data generator
         self.test_generator = DataGenerator(dictionary=self.test_dictionary,
                                             n_classes=self.n_classes,
                                             params=config.params,
                                             input_shape=self.input_shape,
                                             feature_shapes=self.feature_shapes,
                                             n_anchors=self.n_anchors,
-                                            batch_size=32,
+                                            batch_size=self.batch_size,
                                             shuffle=True)
 
 
@@ -91,11 +102,17 @@ class TinySSD():
 
 
     def offsets_loss(self, y_true, y_pred):
+        # 1st 4 are offsets
         offset = y_true[..., 0:4]
+        # last 4 are mask
         mask = y_true[..., 4:8]
+        # pred is actually duplicated for alignment
+        # either we get the 1st or last 4 offset pred
+        # and apply the mask
         pred = y_pred[..., 0:4]
         offset *= mask
         pred *= mask
+        # we can use L1 or L2 or soft L1
         return K.mean(K.abs(pred - offset), axis=-1)
         
 
@@ -112,7 +129,7 @@ class TinySSD():
             os.makedirs(save_dir)
         filepath = os.path.join(save_dir, model_name)
 
-        # prepare callbacks for model saving and for learning rate adjustment.
+        # prepare callbacks for model saving
         checkpoint = ModelCheckpoint(filepath=filepath,
                                      verbose=1,
                                      save_weights_only=True)
@@ -122,24 +139,27 @@ class TinySSD():
                                validation_data=self.test_generator,
                                use_multiprocessing=True,
                                callbacks=callbacks,
-                               epochs=100,
-                               workers=16)
+                               epochs=self.epochs,
+                               workers=self.workers)
 
     def load_weights(self, weights):
         print("Loading weights : ", weights)
         self.ssd.load_weights(weights)
 
-
+    # evaluate image based on its index number (id)
     def evaluate(self, image_index=0):
         image_path = os.path.join(config.params['data_path'],
                                   self.test_keys[image_index])
         image = skimage.img_as_float(imread(image_path))
         image = np.expand_dims(image, axis=0)
         classes, offsets = self.ssd.predict(image)
+        print("Classes shape: ", classes.shape)
+        print("Offsets shape: ", offsets.shape)
         image = np.squeeze(image, axis=0)
-        classes = np.argmax(classes[0], axis=1)
+        # classes = np.argmax(classes[0], axis=1)
+        classes = np.squeeze(classes)
+        # classes = np.argmax(classes, axis=1)
         offsets = np.squeeze(offsets)
-        print(np.unique(classes, return_counts=True))
         show_boxes(image, classes, offsets, self.feature_shapes)
 
     def test_generator(self):

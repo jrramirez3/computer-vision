@@ -244,8 +244,11 @@ def get_gt_data(iou, n_classes=6, anchors=None, labels=None):
 
     # class generation
     gt_class = np.zeros((iou.shape[0], n_classes))
+    # by default all are background
     gt_class[:, 0] = 1
+    # but those that belong to maxiou_per_gt are not
     gt_class[maxiou_per_gt, 0] = 0
+    # we have to find those column indeces (classes)
     maxiou_col = np.reshape(maxiou_per_gt, (maxiou_per_gt.shape[0], 1))
     label_col = np.reshape(labels[:,4], (labels.shape[0], 1)).astype(int)
     row_col = np.append(maxiou_col, label_col, axis=1)

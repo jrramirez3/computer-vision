@@ -20,14 +20,28 @@ from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
 from layer_utils import anchor_boxes
 
+def nms(classes, offsets, anchors):
+    # get all non-zero (non-background) objects
+    objects = np.argmax(classes, axis=1)
+    scores = np.zeros((classes.shape[0],))
+    print(np.unique(objects, return_counts=True))
+    print("Objects shape: ", objects.shape)
+    nonbg = np.nonzero(objects)[0]
+    scores[nonbg] = np.amax(classes[nonbg], axis=1)
+    print(scores[nonbg])
+    print("Scores shape: ", scores.shape)
+    # print(nonbg)
+
+    return objects, nonbg, scores
 
 def show_boxes(image,
                classes,
                offsets,
                feature_shapes):
-    nonbg = np.nonzero(classes)[0]
-    n_layers = len(feature_shapes)
+
+    # generate all anchors per feature map
     anchors = []
+    n_layers = len(feature_shapes)
     for index, shape in enumerate(feature_shapes):
         shape = (1, *shape)
         anchor = anchor_boxes(shape,
@@ -39,7 +53,16 @@ def show_boxes(image,
         else:
             anchors = np.concatenate((anchors, anchor), axis=0)
 
-    print(anchors.shape)
+    print("Offsets shape: ", offsets.shape)
+    print("Classes shape: ", classes.shape)
+    print("Anchors shape: ", anchors.shape)
+
+    # get all non-zero (non-background) objects
+    # objects = np.argmax(classes, axis=1)
+    # print(np.unique(objects, return_counts=True))
+    # nonbg = np.nonzero(objects)[0]
+    objects, nonbg, scores = nms(classes, offsets, anchors)
+
     fig, ax = plt.subplots(1)
     ax.imshow(image)
     for i in range(len(nonbg)):
@@ -53,7 +76,7 @@ def show_boxes(image,
         h = box[3] - box[2]
         x = box[0]
         y = box[2]
-        category = int(classes[idx])
+        category = int(objects[idx])
         color = label_utils.get_box_color(category)
         rect = Rectangle((x, y),
                          w,
@@ -63,6 +86,7 @@ def show_boxes(image,
                          facecolor='none')
         ax.add_patch(rect)
         class_name = label_utils.index2class(category)
+        class_name = "%s: %0.2f" % (class_name, scores[idx])
         bbox = dict(color='none', alpha=1.0)
         ax.text(box[0]+2,
                 box[2]-16,
