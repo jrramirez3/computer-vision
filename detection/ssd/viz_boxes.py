@@ -14,6 +14,7 @@ import os
 import layer_utils
 import label_utils
 import config
+import math
 
 from skimage.io import imread
 from matplotlib.patches import Rectangle
@@ -21,16 +22,16 @@ from matplotlib.lines import Line2D
 from layer_utils import anchor_boxes
 
 
-def soft_nms(classes, offsets, anchors, thresh=0.5):
-    return
-
-def nms(classes, offsets, anchors, class_thresh=0.2, iou_thresh=0.3):
+def nms(classes,
+        offsets,
+        anchors,
+        class_thresh=0.5,
+        iou_thresh=0.5,
+        is_soft=True):
     # get all non-zero (non-background) objects
     objects = np.argmax(classes, axis=1)
-    print(np.unique(objects, return_counts=True))
-    print("Objects shape: ", objects.shape)
     nonbg = np.nonzero(objects)[0]
-    print("Candidate non bg: ", nonbg.shape[0])
+    print("Candidate non bg: ", nonbg.size)
 
     indexes = []
     while True:
@@ -57,9 +58,15 @@ def nms(classes, offsets, anchors, class_thresh=0.2, iou_thresh=0.3):
             box = np.expand_dims(box, axis=0)
             iou = layer_utils.iou(box, score_box)[0][0]
             if iou >= iou_thresh:
-                nonbg = nonbg[nonbg != idx]
                 print(score_idx, "overlaps ", idx, "with iou ", iou)
-                print("Removing ...")
+                if is_soft:
+                    iou = iou * iou
+                    iou /= 0.5
+                    classes[idx] *= math.exp(-iou)
+                    print("Scaling...")
+                else:
+                    nonbg = nonbg[nonbg != idx]
+                    print("Removing ...")
 
         if nonbg.size == 0:
             break
@@ -68,8 +75,11 @@ def nms(classes, offsets, anchors, class_thresh=0.2, iou_thresh=0.3):
     scores = np.zeros((classes.shape[0],))
     scores[indexes] = np.amax(classes[indexes], axis=1)
     print("Validated non bg: ", len(indexes))
+    if is_soft:
+        print("Soft NMS")
 
     return objects, indexes, scores
+
 
 def show_boxes(image,
                classes,
@@ -98,11 +108,14 @@ def show_boxes(image,
     # objects = np.argmax(classes, axis=1)
     # print(np.unique(objects, return_counts=True))
     # nonbg = np.nonzero(objects)[0]
-    objects, nonbg, scores = nms(classes, offsets, anchors)
+    objects, indexes, scores = nms(classes,
+                                   offsets,
+                                   anchors,
+                                   is_soft=False)
 
     fig, ax = plt.subplots(1)
     ax.imshow(image)
-    for idx in nonbg:
+    for idx in indexes:
         box = anchors[idx] #batch, row, col, box
         offset = offsets[idx]
         for j in range(4):
