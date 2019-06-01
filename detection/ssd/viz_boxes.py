@@ -20,19 +20,56 @@ from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
 from layer_utils import anchor_boxes
 
-def nms(classes, offsets, anchors):
+
+def soft_nms(classes, offsets, anchors, thresh=0.5):
+    return
+
+def nms(classes, offsets, anchors, class_thresh=0.2, iou_thresh=0.3):
     # get all non-zero (non-background) objects
     objects = np.argmax(classes, axis=1)
-    scores = np.zeros((classes.shape[0],))
     print(np.unique(objects, return_counts=True))
     print("Objects shape: ", objects.shape)
     nonbg = np.nonzero(objects)[0]
-    scores[nonbg] = np.amax(classes[nonbg], axis=1)
-    print(scores[nonbg])
-    print("Scores shape: ", scores.shape)
-    # print(nonbg)
+    print("Candidate non bg: ", nonbg.shape[0])
 
-    return objects, nonbg, scores
+    indexes = []
+    while True:
+        scores = np.zeros((classes.shape[0],))
+        scores[nonbg] = np.amax(classes[nonbg], axis=1)
+        score_idx = np.argmax(scores, axis=0)
+        score_max = scores[score_idx]
+        # print(score_max)
+        nonbg = nonbg[nonbg != score_idx]
+        if score_max < class_thresh:
+            if nonbg.size == 0:
+                break
+            continue
+        indexes.append(score_idx)
+        score_anc = anchors[score_idx]
+        score_off = offsets[score_idx][0:4]
+        score_box = score_anc + score_off
+        score_box = np.expand_dims(score_box, axis=0)
+        nonbg_copy = np.copy(nonbg)
+        for idx in nonbg_copy:
+            anchor = anchors[idx]
+            offset = offsets[idx][0:4]
+            box = anchor + offset
+            box = np.expand_dims(box, axis=0)
+            iou = layer_utils.iou(box, score_box)[0][0]
+            if iou >= iou_thresh:
+                nonbg = nonbg[nonbg != idx]
+                print(score_idx, "overlaps ", idx, "with iou ", iou)
+                print("Removing ...")
+
+        if nonbg.size == 0:
+            break
+
+
+    scores = np.zeros((classes.shape[0],))
+    scores[indexes] = np.amax(classes[indexes], axis=1)
+    print("Validated non bg: ", len(indexes))
+
+    return objects, indexes, scores
 
 def show_boxes(image,
                classes,
@@ -65,8 +102,7 @@ def show_boxes(image,
 
     fig, ax = plt.subplots(1)
     ax.imshow(image)
-    for i in range(len(nonbg)):
-        idx = nonbg[i]
+    for idx in nonbg:
         box = anchors[idx] #batch, row, col, box
         offset = offsets[idx]
         for j in range(4):
