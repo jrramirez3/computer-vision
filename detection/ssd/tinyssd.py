@@ -31,8 +31,8 @@ from resnet import build_resnet
 class TinySSD():
     def __init__(self,
                  n_layers=1,
-                 batch_size=8,
-                 epochs=100,
+                 batch_size=32,
+                 epochs=200,
                  workers=16,
                  build_basenet=build_tinynet):
         self.n_layers = n_layers
@@ -120,6 +120,20 @@ class TinySSD():
         return K.mean(K.abs(pred - offset), axis=-1)
         
 
+    def lr_scheduler(self, epoch):
+        lr = 1e-3
+        if epoch > 180:
+            lr *= 0.5e-3
+        elif epoch > 160:
+            lr *= 1e-3
+        elif epoch > 120:
+            lr *= 1e-2
+        elif epoch > 80:
+            lr *= 1e-1
+        print('Learning rate: ', lr)
+        return lr
+
+
     def train_model(self):
         optimizer = Adam(lr=1e-3)
         loss = ['categorical_crossentropy', self.offsets_loss]
@@ -130,6 +144,9 @@ class TinySSD():
         model_name = self.basenetwork.name
         model_name += '_' + str(self.n_layers)
         model_name +=  '-layer_weights-{epoch:03d}.h5'
+
+        print("Batch size: ", self.batch_size)
+        print("Weights file: ", model_name)
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
         filepath = os.path.join(save_dir, model_name)
@@ -139,7 +156,7 @@ class TinySSD():
                                      verbose=1,
                                      save_weights_only=True)
 
-        callbacks = [checkpoint]
+        callbacks = [checkpoint, self.lr_scheduler]
         self.ssd.fit_generator(generator=self.train_generator,
                                validation_data=self.test_generator,
                                use_multiprocessing=True,
@@ -206,14 +223,23 @@ if __name__ == '__main__':
                         default=1,
                         type=int,
                         help=help_)
+    help_ = "Batch size"
+    parser.add_argument("-b",
+                        "--batch_size",
+                        default=32,
+                        type=int,
+                        help=help_)
+
 
     args = parser.parse_args()
 
     if args.resnet:
         tinyssd = TinySSD(n_layers=args.layers,
-                          build_basenet=build_resnet)
+                          build_basenet=build_resnet,
+                          batch_size=args.batch_size)
     else:
-        tinyssd = TinySSD(n_layers=args.layers)
+        tinyssd = TinySSD(n_layers=args.layers,
+                          batch_size=args.batch_size)
     if args.weights:
         tinyssd.load_weights(args.weights)
         if args.evaluate:

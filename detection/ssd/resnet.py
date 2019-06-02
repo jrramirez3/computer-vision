@@ -298,7 +298,7 @@ def resnet_v2(input_shape, depth, n_layers=4):
 def build_resnet(input_shape,
                  n_layers=4,
                  version=2,
-                 n=12):
+                 n=6):
     # model version
     # orig paper: version = 1 (ResNet v1),
     # Improved ResNet: version = 2 (ResNet v2)
