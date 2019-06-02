@@ -111,7 +111,7 @@ def show_boxes(image,
     objects, indexes, scores = nms(classes,
                                    offsets,
                                    anchors,
-                                   is_soft=False)
+                                   is_soft=True)
 
     fig, ax = plt.subplots(1)
     ax.imshow(image)

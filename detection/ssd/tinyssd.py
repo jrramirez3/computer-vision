@@ -26,6 +26,7 @@ from data_generator import DataGenerator
 from model import build_basenetwork, build_ssd
 from label_utils import build_label_dictionary
 from viz_boxes import show_boxes
+from resnet import build_resnet
 
 class TinySSD():
     def __init__(self,
@@ -46,8 +47,10 @@ class TinySSD():
                                   self.keys[0])
         image = skimage.img_as_float(imread(image_path))
         self.input_shape = image.shape
-        basenetwork = build_basenetwork(self.input_shape,
-                                        n_layers=self.n_layers)
+        #basenetwork = build_basenetwork(self.input_shape,
+        #                                n_layers=self.n_layers)
+        basenetwork = build_resnet(self.input_shape,
+                                   n_layers=self.n_layers)
         basenetwork.summary()
 
         ret = build_ssd(self.input_shape,

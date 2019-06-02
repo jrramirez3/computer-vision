@@ -66,7 +66,7 @@ def conv_layer(inputs,
 
 def build_basenetwork(input_shape,
                       n_layers=1,
-                      name='base_network'):
+                      name='tinybase'):
     # basic base network
     # the backbone is just a 3-layer convnet
     inputs = Input(shape=input_shape)
@@ -197,7 +197,9 @@ def build_ssd(input_shape,
         classes = out_cls[0]
 
     outputs = [classes, offsets]
-    model = Model(inputs=inputs, outputs=outputs)
+    model = Model(inputs=inputs,
+                  outputs=outputs,
+                  name='ssd_head')
 
     return n_anchors, feature_shapes, model
 
