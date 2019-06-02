@@ -28,6 +28,20 @@ from label_utils import build_label_dictionary
 from viz_boxes import show_boxes
 from resnet import build_resnet
 
+def lr_scheduler(epoch):
+    lr = 1e-3
+    if epoch > 180:
+        lr *= 0.5e-3
+    elif epoch > 160:
+        lr *= 1e-3
+    elif epoch > 120:
+        lr *= 1e-2
+    elif epoch > 80:
+        lr *= 1e-1
+    print('Learning rate: ', lr)
+    return lr
+
+
 class TinySSD():
     def __init__(self,
                  n_layers=1,
@@ -120,20 +134,6 @@ class TinySSD():
         return K.mean(K.abs(pred - offset), axis=-1)
         
 
-    def lr_scheduler(self, epoch):
-        lr = 1e-3
-        if epoch > 180:
-            lr *= 0.5e-3
-        elif epoch > 160:
-            lr *= 1e-3
-        elif epoch > 120:
-            lr *= 1e-2
-        elif epoch > 80:
-            lr *= 1e-1
-        print('Learning rate: ', lr)
-        return lr
-
-
     def train_model(self):
         optimizer = Adam(lr=1e-3)
         loss = ['categorical_crossentropy', self.offsets_loss]
@@ -156,7 +156,7 @@ class TinySSD():
                                      verbose=1,
                                      save_weights_only=True)
 
-        callbacks = [checkpoint, self.lr_scheduler]
+        callbacks = [checkpoint, lr_scheduler]
         self.ssd.fit_generator(generator=self.train_generator,
                                validation_data=self.test_generator,
                                use_multiprocessing=True,
