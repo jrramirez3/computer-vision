@@ -64,9 +64,9 @@ def conv_layer(inputs,
     return x
 
 
-def build_basenetwork(input_shape,
-                      n_layers=1,
-                      name='tinybase'):
+def build_tinynet(input_shape,
+                  n_layers=1,
+                  name='tinynet'):
     # basic base network
     # the backbone is just a 3-layer convnet
     inputs = Input(shape=input_shape)

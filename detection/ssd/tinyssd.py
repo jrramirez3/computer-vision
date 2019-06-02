@@ -23,7 +23,7 @@ import argparse
 
 from skimage.io import imread
 from data_generator import DataGenerator
-from model import build_basenetwork, build_ssd
+from model import build_tinynet, build_ssd
 from label_utils import build_label_dictionary
 from viz_boxes import show_boxes
 from resnet import build_resnet
@@ -33,14 +33,15 @@ class TinySSD():
                  n_layers=1,
                  batch_size=32,
                  epochs=100,
-                 workers=16):
+                 workers=16,
+                 build_basenet=build_tinynet):
         self.n_layers = n_layers
         self.batch_size = batch_size
         self.epochs = epochs
         self.workers = workers
-        self.build_model()
+        self.build_model(build_basenet)
 
-    def build_model(self):
+    def build_model(self, build_basenet):
         self.build_dictionary()
         # load 1st image and build base network
         image_path = os.path.join(config.params['data_path'],
@@ -49,7 +50,7 @@ class TinySSD():
         self.input_shape = image.shape
         #basenetwork = build_basenetwork(self.input_shape,
         #                                n_layers=self.n_layers)
-        basenetwork = build_resnet(self.input_shape,
+        basenetwork = build_basenet(self.input_shape,
                                    n_layers=self.n_layers)
         basenetwork.summary()
 
@@ -177,9 +178,22 @@ if __name__ == '__main__':
     help_ = "Load h5 model trained weights"
     parser.add_argument("-w", "--weights", help=help_)
     help_ = "Train model"
-    parser.add_argument("-t", "--train", action='store_true', help=help_)
+    parser.add_argument("-t",
+                        "--train",
+                        action='store_true',
+                        help=help_)
     help_ = "Evaluate model"
-    parser.add_argument("-e", "--evaluate", default=False, action='store_true', help=help_)
+    parser.add_argument("-e",
+                        "--evaluate",
+                        default=False,
+                        action='store_true', 
+                        help=help_)
+    help_ = "Use ResNetv2 as base network"
+    parser.add_argument("-r",
+                        "--resnet",
+                        default=False,
+                        action='store_true',
+                        help=help_)
     help_ = "Image index"
     parser.add_argument("--image_index",
                         default=0,
@@ -194,7 +208,11 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    tinyssd = TinySSD(n_layers=args.layers)
+    if args.resnet:
+        tinyssd = TinySSD(n_layers=args.layers,
+                          build_basenet=build_resnet)
+    else:
+        tinyssd = TinySSD(n_layers=args.layers)
     if args.weights:
         tinyssd.load_weights(args.weights)
         if args.evaluate:
