@@ -31,7 +31,7 @@ from resnet import build_resnet
 class TinySSD():
     def __init__(self,
                  n_layers=1,
-                 batch_size=32,
+                 batch_size=8,
                  epochs=100,
                  workers=16,
                  build_basenet=build_tinynet):
@@ -50,12 +50,12 @@ class TinySSD():
         self.input_shape = image.shape
         #basenetwork = build_basenetwork(self.input_shape,
         #                                n_layers=self.n_layers)
-        basenetwork = build_basenet(self.input_shape,
-                                   n_layers=self.n_layers)
-        basenetwork.summary()
+        self.basenetwork = build_basenet(self.input_shape,
+                                         n_layers=self.n_layers)
+        self.basenetwork.summary()
 
         ret = build_ssd(self.input_shape,
-                        basenetwork,
+                        self.basenetwork,
                         n_layers=self.n_layers,
                         n_classes=self.n_classes)
         # n_anchors = num of anchors per feature point (eg 4)
@@ -127,7 +127,8 @@ class TinySSD():
 
         # prepare model model saving directory.
         save_dir = os.path.join(os.getcwd(), 'saved_models')
-        model_name = 'tinyssd_' + str(self.n_layers)
+        model_name = self.basenetwork.name
+        model_name += '_' + str(self.n_layers)
         model_name +=  '-layer_weights-{epoch:03d}.h5'
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
