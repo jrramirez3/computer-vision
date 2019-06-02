@@ -33,11 +33,11 @@ def lr_scheduler(epoch):
     lr = 1e-3
     if epoch > 180:
         lr *= 0.5e-3
-    elif epoch > 160:
+    elif epoch > 140:
         lr *= 1e-3
-    elif epoch > 120:
+    elif epoch > 100:
         lr *= 1e-2
-    elif epoch > 80:
+    elif epoch > 60:
         lr *= 1e-1
     print('Learning rate: ', lr)
     return lr
@@ -48,7 +48,7 @@ class TinySSD():
                  n_layers=1,
                  batch_size=32,
                  epochs=200,
-                 workers=16,
+                 workers=8,
                  build_basenet=build_tinynet):
         self.n_layers = n_layers
         self.batch_size = batch_size
