@@ -11,6 +11,7 @@ from tensorflow.keras.utils import plot_model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import backend as K
 from tensorflow.keras.callbacks import ModelCheckpoint
+from tensorflow.keras.callbacks import LearningRateScheduler
 
 import layer_utils
 import label_utils
@@ -155,8 +156,9 @@ class TinySSD():
         checkpoint = ModelCheckpoint(filepath=filepath,
                                      verbose=1,
                                      save_weights_only=True)
+        scheduler = LearningRateScheduler(lr_scheduler)
 
-        callbacks = [checkpoint, lr_scheduler]
+        callbacks = [checkpoint, scheduler]
         self.ssd.fit_generator(generator=self.train_generator,
                                validation_data=self.test_generator,
                                use_multiprocessing=True,
