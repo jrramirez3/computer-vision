@@ -48,7 +48,7 @@ class TinySSD():
                  n_layers=1,
                  batch_size=32,
                  epochs=200,
-                 workers=8,
+                 workers=16,
                  build_basenet=build_tinynet):
         self.n_layers = n_layers
         self.batch_size = batch_size
