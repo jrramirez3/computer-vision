@@ -160,7 +160,7 @@ class TinySSD():
 
         callbacks = [checkpoint, scheduler]
         self.ssd.fit_generator(generator=self.train_generator,
-                               validation_data=self.test_generator,
+                               # validation_data=self.test_generator,
                                use_multiprocessing=True,
                                callbacks=callbacks,
                                epochs=self.epochs,
