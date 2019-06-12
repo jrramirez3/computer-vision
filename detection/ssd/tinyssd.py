@@ -46,7 +46,7 @@ def lr_scheduler(epoch):
 class TinySSD():
     def __init__(self,
                  n_layers=1,
-                 batch_size=32,
+                 batch_size=8,
                  epochs=200,
                  workers=16,
                  build_basenet=build_tinynet):
@@ -111,7 +111,7 @@ class TinySSD():
         self.keys = np.array(list(self.dictionary.keys()))
 
         csv_path = os.path.join(config.params['data_path'],
-                                config.params['test_labels'])
+                                config.params['train_labels'])
         self.test_dictionary, _ = build_label_dictionary(csv_path)
         self.test_keys = np.array(list(self.test_dictionary.keys()))
 

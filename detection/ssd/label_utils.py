@@ -22,7 +22,8 @@ def get_box_color(index=None):
 
 
 def index2class(index=0):
-    classes = ["background", "car", "truck", "pedestrian", "street light", "traffic light"]
+    # classes = ["background", "car", "truck", "pedestrian", "street light", "traffic light"]
+    classes = ["background", "Summit", "Coke", "PineJuice"]
     return classes[index]
 
 
