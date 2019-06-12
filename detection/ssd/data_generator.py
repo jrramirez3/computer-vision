@@ -18,6 +18,7 @@ from layer_utils import anchor_boxes
 import config
 from tensorflow.python.keras.utils.data_utils import Sequence
 
+
 class DataGenerator(Sequence):
 
     def __init__(self,
