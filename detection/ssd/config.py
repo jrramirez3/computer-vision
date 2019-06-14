@@ -10,6 +10,6 @@ params = {
         #'data_path' : 'dataset/udacity_driving_datasets',
         'data_path' : 'dataset/drinks',
         'train_labels' : 'labels_train.csv',
-        'test_labels' : 'labels_val.csv',
+        'test_labels' : 'labels_test.csv',
         'n_classes' : 3
         }
