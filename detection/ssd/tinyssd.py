@@ -1,5 +1,7 @@
 """Model builder
 
+python3 tinyssd.py -l=4 -r -e --weights=saved_models/ResNet56v2_4-layer_weights-200.h5 --image_index=601
+
 """
 
 from __future__ import absolute_import
@@ -111,7 +113,7 @@ class TinySSD():
         self.keys = np.array(list(self.dictionary.keys()))
 
         csv_path = os.path.join(config.params['data_path'],
-                                config.params['test_labels'])
+                                config.params['train_labels'])
         self.test_dictionary, _ = build_label_dictionary(csv_path)
         self.test_keys = np.array(list(self.test_dictionary.keys()))
 
@@ -171,20 +173,29 @@ class TinySSD():
         self.ssd.load_weights(weights)
 
     # evaluate image based on its index number (id)
-    def evaluate(self, image_index=0):
-        image_path = os.path.join(config.params['data_path'],
-                                  self.test_keys[image_index])
-        image = skimage.img_as_float(imread(image_path))
+    def evaluate(self, image_index=0, image=None):
+        show = False
+        if image is None:
+            image_path = os.path.join(config.params['data_path'],
+                                      self.test_keys[image_index])
+            image = skimage.img_as_float(imread(image_path))
+            show = True
+
         image = np.expand_dims(image, axis=0)
         classes, offsets = self.ssd.predict(image)
-        print("Classes shape: ", classes.shape)
-        print("Offsets shape: ", offsets.shape)
+        # print("Classes shape: ", classes.shape)
+        # print("Offsets shape: ", offsets.shape)
         image = np.squeeze(image, axis=0)
         # classes = np.argmax(classes[0], axis=1)
         classes = np.squeeze(classes)
         # classes = np.argmax(classes, axis=1)
         offsets = np.squeeze(offsets)
-        show_boxes(image, classes, offsets, self.feature_shapes)
+        class_names, rects = show_boxes(image,
+                                        classes,
+                                        offsets,
+                                        self.feature_shapes,
+                                        show=show)
+        return class_names, rects
 
     def test_generator(self):
         x, y = self.train_generator.test(0)

@@ -31,7 +31,7 @@ def nms(classes,
     # get all non-zero (non-background) objects
     objects = np.argmax(classes, axis=1)
     nonbg = np.nonzero(objects)[0]
-    print("Candidate non bg: ", nonbg.size)
+    #print("Candidate non bg: ", nonbg.size)
 
     indexes = []
     while True:
@@ -58,7 +58,7 @@ def nms(classes,
             box = np.expand_dims(box, axis=0)
             iou = layer_utils.iou(box, score_box)[0][0]
             if iou >= iou_thresh:
-                print(score_idx, "overlaps ", idx, "with iou ", iou)
+                #print(score_idx, "overlaps ", idx, "with iou ", iou)
                 if is_soft:
                     iou = iou * iou
                     iou /= 0.5
@@ -74,17 +74,19 @@ def nms(classes,
 
     scores = np.zeros((classes.shape[0],))
     scores[indexes] = np.amax(classes[indexes], axis=1)
-    print("Validated non bg: ", len(indexes))
-    if is_soft:
-        print("Soft NMS")
+    #print("Validated non bg: ", len(indexes))
+    #if is_soft:
+    #    print("Soft NMS")
 
     return objects, indexes, scores
 
 
+# image must be normalized (0.0, 1.0)
 def show_boxes(image,
                classes,
                offsets,
-               feature_shapes):
+               feature_shapes,
+               show=True):
 
     # generate all anchors per feature map
     anchors = []
@@ -100,9 +102,9 @@ def show_boxes(image,
         else:
             anchors = np.concatenate((anchors, anchor), axis=0)
 
-    print("Offsets shape: ", offsets.shape)
-    print("Classes shape: ", classes.shape)
-    print("Anchors shape: ", anchors.shape)
+    # print("Offsets shape: ", offsets.shape)
+    # print("Classes shape: ", classes.shape)
+    # print("Anchors shape: ", anchors.shape)
 
     # get all non-zero (non-background) objects
     # objects = np.argmax(classes, axis=1)
@@ -113,8 +115,11 @@ def show_boxes(image,
                                    anchors,
                                    is_soft=True)
 
-    fig, ax = plt.subplots(1)
-    ax.imshow(image)
+    class_names = []
+    rects = []
+    if show:
+        fig, ax = plt.subplots(1)
+        ax.imshow(image)
     for idx in indexes:
         box = anchors[idx] #batch, row, col, box
         offset = offsets[idx]
@@ -126,26 +131,34 @@ def show_boxes(image,
         x = box[0]
         y = box[2]
         category = int(objects[idx])
-        color = label_utils.get_box_color(category)
-        rect = Rectangle((x, y),
-                         w,
-                         h,
-                         linewidth=2,
-                         edgecolor=color,
-                         facecolor='none')
-        ax.add_patch(rect)
         class_name = label_utils.index2class(category)
         class_name = "%s: %0.2f" % (class_name, scores[idx])
-        bbox = dict(color='none', alpha=1.0)
-        ax.text(box[0]+2,
-                box[2]-16,
-                class_name,
-                color=color,
-                fontweight='bold',
-                bbox=bbox,
-                fontsize=8,
-                verticalalignment='top')
-    plt.show()
+        class_names.append(class_name)
+        rect = (x, y, w, h)
+        rects.append(rect)
+        if show:
+            color = label_utils.get_box_color(category)
+            rect = Rectangle((x, y),
+                             w,
+                             h,
+                             linewidth=2,
+                             edgecolor=color,
+                             facecolor='none')
+            ax.add_patch(rect)
+            bbox = dict(color='none', alpha=1.0)
+            ax.text(box[0]+2,
+                    box[2]-16,
+                    class_name,
+                    color=color,
+                    fontweight='bold',
+                    bbox=bbox,
+                    fontsize=8,
+                    verticalalignment='top')
+
+    if show:
+        plt.show()
+
+    return class_names, rects
 
 
 def show_anchors(image,
