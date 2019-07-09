@@ -96,8 +96,8 @@ class DataGenerator(Sequence):
                 image = exposure.rescale_intensity(image, in_range=(v_min, v_max))
 
             random = np.random.randint(0, 100)
-            if random < 50:
-                if random < 25:
+            if random < 80:
+                if random < 40:
                     image = exposure.adjust_gamma(image, gamma=0.4, gain=0.9)
                 else:
                     image = exposure.adjust_log(image)

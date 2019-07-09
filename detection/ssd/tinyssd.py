@@ -113,7 +113,7 @@ class TinySSD():
         self.keys = np.array(list(self.dictionary.keys()))
 
         csv_path = os.path.join(config.params['data_path'],
-                                config.params['train_labels'])
+                                config.params['test_labels'])
         self.test_dictionary, _ = build_label_dictionary(csv_path)
         self.test_keys = np.array(list(self.test_dictionary.keys()))
 
