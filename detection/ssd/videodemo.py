@@ -19,8 +19,10 @@ import skimage
 class  VideoDemo():
     def __init__(self,
                  detector,
+                 camera=0,
                  width=640,
                  height=480):
+        self.camera = camera
         self.detector = detector
         self.width = width
         self.height = height
@@ -128,6 +130,11 @@ if __name__ == '__main__':
                         default=32,
                         type=int,
                         help=help_)
+    help_ = "Camera index"
+    parser.add_argument("--camera",
+                        default=0,
+                        type=int,
+                        help=help_)
 
 
     args = parser.parse_args()
@@ -141,5 +148,5 @@ if __name__ == '__main__':
                           batch_size=args.batch_size)
     if args.weights:
         tinyssd.load_weights(args.weights)
-        videodemo = VideoDemo(detector=tinyssd)
+        videodemo = VideoDemo(detector=tinyssd, camera=args.camera)
         videodemo.loop()
