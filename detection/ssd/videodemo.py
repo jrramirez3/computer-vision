@@ -29,7 +29,7 @@ class  VideoDemo():
         self.initialize()
 
     def initialize(self):
-        self.capture = cv2.VideoCapture(1)
+        self.capture = cv2.VideoCapture(self.camera)
         if not self.capture.isOpened():
             print("Error opening video camera")
             return
