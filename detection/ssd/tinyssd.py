@@ -173,13 +173,14 @@ class TinySSD():
         self.ssd.load_weights(weights)
 
     # evaluate image based on its index number (id)
-    def evaluate(self, image_index=0, image=None):
+    def evaluate(self, image_index=10000):
         show = False
-        if image is None:
-            image_path = os.path.join(config.params['data_path'],
-                                      self.test_keys[image_index])
-            image = skimage.img_as_float(imread(image_path))
-            show = True
+        target_file = "%07d" % image_index
+        target_file += ".jpg"
+        image_path = os.path.join(config.params['data_path'], target_file)
+        # self.test_keys[image_index])
+        image = skimage.img_as_float(imread(image_path))
+        show = True
 
         image = np.expand_dims(image, axis=0)
         classes, offsets = self.ssd.predict(image)

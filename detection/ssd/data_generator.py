@@ -86,21 +86,21 @@ class DataGenerator(Sequence):
             image_path = os.path.join(data_path, key)
             image = skimage.img_as_float(imread(image_path))
 
-            random = np.random.randint(0, 100)
-            if random < 30:
-                image = random_noise(image)
+            #random = np.random.randint(0, 100)
+            #if random < 30:
+            #    image = random_noise(image)
 
-            random = np.random.randint(0, 100)
-            if random < 80:
-                v_min, v_max = np.percentile(image, (0.2, 99.8))
-                image = exposure.rescale_intensity(image, in_range=(v_min, v_max))
+            #random = np.random.randint(0, 100)
+            #if random < 80:
+            #    v_min, v_max = np.percentile(image, (0.2, 99.8))
+            #    image = exposure.rescale_intensity(image, in_range=(v_min, v_max))
 
-            random = np.random.randint(0, 100)
-            if random < 80:
-                if random < 40:
-                    image = exposure.adjust_gamma(image, gamma=0.4, gain=0.9)
-                else:
-                    image = exposure.adjust_log(image)
+            #random = np.random.randint(0, 100)
+            #if random < 80:
+            #    if random < 40:
+            #        image = exposure.adjust_gamma(image, gamma=0.4, gain=0.9)
+            #    else:
+            #        image = exposure.adjust_log(image)
 
             x[i] = image
             labels = self.dictionary[key]

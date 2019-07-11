@@ -25,7 +25,7 @@ class  VideoDemo():
         self.initialize()
 
     def initialize(self):
-        self.capture = cv2.VideoCapture(0)
+        self.capture = cv2.VideoCapture(1)
         if not self.capture.isOpened():
             print("Error opening video camera")
             return
@@ -46,8 +46,11 @@ class  VideoDemo():
             ret, image = self.capture.read()
             # img = cv2.resize(img, dsize=(320, 240), 
             # interpolation=cv2.INTER_CUBIC)
-            image = image / 255.0
-            class_names, rects = self.detector.evaluate(image=image)
+            img = image.copy()
+            if np.amax(img) > 1.0:
+                img = img / 255.0
+                print("Norm")
+            class_names, rects = self.detector.evaluate(image=img)
             elapsed_time = datetime.datetime.now() - start_time
             hz = 1.0 / elapsed_time.total_seconds()
             hz = "%0.2fHz" % hz
