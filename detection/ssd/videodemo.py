@@ -14,7 +14,8 @@ from viz_boxes import show_boxes
 import datetime
 from skimage.io import imread
 import skimage
-import labels_utils
+import label_utils
+import config
 
 
 class  VideoDemo():
@@ -43,7 +44,7 @@ class  VideoDemo():
     def loop(self):
         font = cv2.FONT_HERSHEY_DUPLEX
         pos = (10,30)
-        font_scale = 0.8
+        font_scale = 0.9
         font_color = (0, 0, 0)
         line_type = 1
 
@@ -72,6 +73,7 @@ class  VideoDemo():
             #            font_color,
             #            line_type)
 
+            items = {}
             for i in range(len(class_names)):
                 rect = rects[i]
                 x1 = rect[0]
@@ -82,17 +84,65 @@ class  VideoDemo():
                 x2 = int(x2)
                 y1 = int(y1)
                 y2 = int(y2)
-                index = labels_utils.class2index(class_names[i])
-                color = labels_utils.get_box_rgbcolor(index)
+                name = class_names[i].split(":")[0]
+                if name in items.keys():
+                    items[name] += 1
+                else:
+                    items[name] = 1
+                index = label_utils.class2index(name)
+                color = label_utils.get_box_rgbcolor(index)
                 cv2.rectangle(image, (x1, y1), (x2, y2), color, 3)
-                print(x1, y1, x2, y2, class_names[i])
+                # print(x1, y1, x2, y2, class_names[i])
                 cv2.putText(image,
-                            class_names[i],
+                            name,
                             (x1, y1-15),
                             font,
                             0.5,
-                            (255, 0, 0),
+                            color,
                             line_type)
+
+            count = len(items.keys())
+            if count > 0:
+                xmin = 10
+                ymin = 10
+                xmax = 220
+                ymax = 40 + count * 30
+                cv2.rectangle(image, (xmin, ymin), (xmax, ymax), (255, 255, 255), thickness=-1)
+
+                prices = config.params['prices']
+                total = 0.0
+                for key in items.keys():
+                    count = items[key]
+                    cost = count * prices[label_utils.class2index(key)]
+                    total += cost
+                    display = "%0.2f :%dx %s" % (cost, count, key)
+                    cv2.putText(image,
+                                display,
+                                (xmin + 10, ymin + 25),
+                                font,
+                                0.55,
+                                (0, 0, 0),
+                                1)
+                    ymin += 30
+
+                cv2.line(image, (xmin + 10, ymin), (xmax - 10, ymin), (0,0,0), 1)
+                #cv2.putText(image,
+                #            "_________",
+                #            (xmin + 10, ymin + 25),
+                #            font,
+                #            0.55,
+                #            (0, 0, 0),
+                #            1)
+                # ymin += 30
+
+                display = "P%0.2f Total" % (total)
+                cv2.putText(image,
+                            display,
+                            (xmin + 5, ymin + 25),
+                            font,
+                            0.75,
+                            (0, 0, 0),
+                            1)
 
             cv2.imshow('image', image)
             if cv2.waitKey(1) & 0xFF == ord('q'):

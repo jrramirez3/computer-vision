@@ -11,5 +11,6 @@ params = {
         'train_labels' : 'labels_train.csv',
         'test_labels' : 'labels_test.csv',
         'n_classes' : 3,
-        'classes' : ["background", "Summit", "Coke", "Pine Juice"]
+        'classes' : ["background", "Summit", "Coke", "Pine Juice"],
+        'prices' : [0.0, 10.0, 40.0, 35.0]
         }

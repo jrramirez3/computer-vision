@@ -46,7 +46,7 @@ if __name__ == '__main__':
             name = region["region_attributes"]
             class_id = name["name"]
             fmt = "%s,%s,%s,%d,%d,%s"
-            line = fmt % (filename, xmin, xmax, ymin, ymax, class_id)
+            line = fmt % (filename, xmin, ymin, xmax, ymax, class_id)
             print(line)
             # print(filename,",",xmin, ",", ymin, ",", str(xmax), ",",  str(ymax), ",", class_id)
 
