@@ -12,6 +12,7 @@ import math
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from random import randint
+import config
 
 
 def get_box_color(index=None):
@@ -21,10 +22,22 @@ def get_box_color(index=None):
     return colors[index % len(colors)]
 
 
+def get_box_rgbcolor(index=None):
+    colors = [(0, 0, 0), (255, 0, 0), (0, 0, 255), (0, 255, 0), (128, 128, 0)]
+    if index is None:
+        return colors[randint(0, len(colors) - 1)]
+    return colors[index % len(colors)]
+
+
 def index2class(index=0):
-    # classes = ["background", "car", "truck", "pedestrian", "street light", "traffic light"]
-    classes = ["background", "Summit", "Coke", "PineJuice"]
+    #classes = ["background", "Summit", "Coke", "PineJuice"]
+    classes = config.params['classes']
     return classes[index]
+
+def class2index(class_="background"):
+    # classes = ["background", "Summit", "Coke", "PineJuice"]
+    classes = config.params['classes']
+    return classes.index(class_)
 
 
 def load_csv(path):

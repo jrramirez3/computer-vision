@@ -14,6 +14,7 @@ from viz_boxes import show_boxes
 import datetime
 from skimage.io import imread
 import skimage
+import labels_utils
 
 
 class  VideoDemo():
@@ -40,7 +41,7 @@ class  VideoDemo():
         # self.capture.set(cv2.CAP_PROP_CONVERT_RGB,True)
 
     def loop(self):
-        font = cv2.FONT_HERSHEY_COMPLEX
+        font = cv2.FONT_HERSHEY_DUPLEX
         pos = (10,30)
         font_scale = 0.8
         font_color = (0, 0, 0)
@@ -54,21 +55,23 @@ class  VideoDemo():
             #cv2.imwrite(filename, image)
             #img = skimage.img_as_float(imread(filename))
 
-            img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            if np.amax(img) > 1.0:
-                img = img / 255.0
+            img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) / 255.0
+            #if np.amax(img) > 1.0:
+            #    img = img / 255.0
 
             class_names, rects = self.detector.evaluate(image=img)
-            elapsed_time = datetime.datetime.now() - start_time
-            hz = 1.0 / elapsed_time.total_seconds()
-            hz = "%0.2fHz" % hz
-            cv2.putText(image,
-                        hz,
-                        pos,
-                        font,
-                        font_scale,
-                        font_color,
-                        line_type)
+            
+            #elapsed_time = datetime.datetime.now() - start_time
+            #hz = 1.0 / elapsed_time.total_seconds()
+            #hz = "%0.2fHz" % hz
+            #cv2.putText(image,
+            #            hz,
+            #            pos,
+            #            font,
+            #            font_scale,
+            #            font_color,
+            #            line_type)
+
             for i in range(len(class_names)):
                 rect = rects[i]
                 x1 = rect[0]
@@ -79,7 +82,9 @@ class  VideoDemo():
                 x2 = int(x2)
                 y1 = int(y1)
                 y2 = int(y2)
-                cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                index = labels_utils.class2index(class_names[i])
+                color = labels_utils.get_box_rgbcolor(index)
+                cv2.rectangle(image, (x1, y1), (x2, y2), color, 3)
                 print(x1, y1, x2, y2, class_names[i])
                 cv2.putText(image,
                             class_names[i],

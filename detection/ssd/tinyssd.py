@@ -56,6 +56,8 @@ class TinySSD():
         self.batch_size = batch_size
         self.epochs = epochs
         self.workers = workers
+        self.train_generator = None
+        self.test_generator = None
         self.build_model(build_basenet)
 
     def build_model(self, build_basenet):
@@ -81,6 +83,8 @@ class TinySSD():
         self.n_anchors, self.feature_shapes, self.ssd = ret
         self.ssd.summary()
 
+
+    def build_generator(self):
         # multi-thread train data generator
         self.train_generator = DataGenerator(dictionary=self.dictionary,
                                              n_classes=self.n_classes,
@@ -138,6 +142,9 @@ class TinySSD():
         
 
     def train_model(self):
+        if self.train_generator is None:
+            self.build_generator()
+
         optimizer = Adam(lr=1e-3)
         loss = ['categorical_crossentropy', self.offsets_loss]
         self.ssd.compile(optimizer=optimizer, loss=loss)
