@@ -37,7 +37,7 @@ class  VideoDemo():
         # cap.set(cv2.CAP_PROP_FPS, 5)
         self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
         self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
-        self.capture.set(cv2.CAP_PROP_CONVERT_RGB,True)
+        # self.capture.set(cv2.CAP_PROP_CONVERT_RGB,True)
 
     def loop(self):
         font = cv2.FONT_HERSHEY_COMPLEX
@@ -49,14 +49,15 @@ class  VideoDemo():
         while True:
             start_time = datetime.datetime.now()
             ret, image = self.capture.read()
-            # img = cv2.resize(img, dsize=(320, 240), 
-            # interpolation=cv2.INTER_CUBIC)
-            filename = "temp.jpg"
-            cv2.imwrite(filename, image)
-            #img = image.copy()
-            #if np.amax(img) > 1.0:
-            #    img = img / 255.0
-            img = skimage.img_as_float(imread(filename))
+
+            #filename = "temp.jpg"
+            #cv2.imwrite(filename, image)
+            #img = skimage.img_as_float(imread(filename))
+
+            img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            if np.amax(img) > 1.0:
+                img = img / 255.0
+
             class_names, rects = self.detector.evaluate(image=img)
             elapsed_time = datetime.datetime.now() - start_time
             hz = 1.0 / elapsed_time.total_seconds()
