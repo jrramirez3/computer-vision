@@ -1,6 +1,13 @@
-"""Model builder
+"""SSD model builder and trainer
 
-python3 tinyssd.py -l=4 -r -e --weights=saved_models/ResNet56v2_4-layer_weights-200.h5 --image_index=601
+Train with 4 layers of feature maps:
+python3 ssd.py -l=4
+
+Train from a previously saved model:
+python3 ssd.py -l=4 --weights=saved_models/ResNet56v2_4-layer_weights-200.h5
+
+Evaluate:
+python3 ssd.py -l=4 -e --weights=saved_models/ResNet56v2_4-layer_weights-200.h5 --image_index=10
 
 """
 
@@ -45,7 +52,7 @@ def lr_scheduler(epoch):
     return lr
 
 
-class TinySSD():
+class SSD():
     def __init__(self,
                  n_layers=1,
                  batch_size=8,
@@ -206,13 +213,6 @@ class TinySSD():
                                         show=show)
         return class_names, rects
 
-    def test_generator(self):
-        x, y = self.train_generator.test(0)
-        print(x.shape)
-        print(y[0].shape)
-        print(y[1].shape)
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     help_ = "Load h5 model trained weights"
@@ -231,7 +231,7 @@ if __name__ == '__main__':
     help_ = "Use ResNetv2 as base network"
     parser.add_argument("-r",
                         "--resnet",
-                        default=False,
+                        default=True,
                         action='store_true',
                         help=help_)
     help_ = "Image index"
@@ -256,19 +256,19 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.resnet:
-        tinyssd = TinySSD(n_layers=args.layers,
-                          build_basenet=build_resnet,
-                          batch_size=args.batch_size)
+        ssd = SSD(n_layers=args.layers,
+                  build_basenet=build_resnet,
+                  batch_size=args.batch_size)
     else:
-        tinyssd = TinySSD(n_layers=args.layers,
-                          batch_size=args.batch_size)
+        ssd = SSD(n_layers=args.layers,
+                  batch_size=args.batch_size)
+
     if args.weights:
-        tinyssd.load_weights(args.weights)
+        ssd.load_weights(args.weights)
         if args.evaluate:
-            tinyssd.evaluate(args.image_index)
-            
+            ssd.evaluate(args.image_index)
             
     if args.train:
-        tinyssd.train_model()
+        ssd.train_model()
 
     

@@ -4,18 +4,19 @@ python3 video_demo.py -l=4 -r --weights=saved_models/ResNet56v2_4-layer_weights-
 
 """
 
-import tinyssd
+import ssd
 import numpy as np
 import cv2
-from tinyssd import TinySSD
 import argparse
-from resnet import build_resnet
-from viz_boxes import show_boxes
 import datetime
-from skimage.io import imread
 import skimage
 import label_utils
 import config
+
+from ssd import SSD
+from resnet import build_resnet
+from viz_boxes import show_boxes
+from skimage.io import imread
 
 
 class  VideoDemo():
@@ -200,13 +201,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.resnet:
-        tinyssd = TinySSD(n_layers=args.layers,
-                          build_basenet=build_resnet,
-                          batch_size=args.batch_size)
+        ssd = SSD(n_layers=args.layers,
+                  build_basenet=build_resnet,
+                  batch_size=args.batch_size)
     else:
-        tinyssd = TinySSD(n_layers=args.layers,
-                          batch_size=args.batch_size)
+        ssd = SSD(n_layers=args.layers,
+                  batch_size=args.batch_size)
     if args.weights:
-        tinyssd.load_weights(args.weights)
-        videodemo = VideoDemo(detector=tinyssd, camera=args.camera)
+        ssd.load_weights(args.weights)
+        videodemo = VideoDemo(detector=ssd, camera=args.camera)
         videodemo.loop()
