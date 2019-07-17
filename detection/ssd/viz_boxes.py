@@ -25,8 +25,8 @@ from layer_utils import anchor_boxes
 def nms(classes,
         offsets,
         anchors,
-        class_thresh=0.9,
-        iou_thresh=0.3,
+        class_thresh=0.92,
+        iou_thresh=0.2,
         is_soft=True):
     # get all non-zero (non-background) objects
     objects = np.argmax(classes, axis=1)

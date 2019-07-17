@@ -39,6 +39,8 @@ class  VideoDemo():
         # cap.set(cv2.CAP_PROP_FPS, 5)
         self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
         self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
+
+        self.videowriter = cv2.VideoWriter("demo.mp4", cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), 10, (self.width, self.height), isColor=True)
         # self.capture.set(cv2.CAP_PROP_CONVERT_RGB,True)
 
     def loop(self):
@@ -145,6 +147,8 @@ class  VideoDemo():
                             1)
 
             cv2.imshow('image', image)
+            if self.videowriter.isOpened():
+                self.videowriter.write(image)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
