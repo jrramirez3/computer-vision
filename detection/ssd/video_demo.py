@@ -1,6 +1,6 @@
 """
 
-python3 videodemo.py -l=4 -r --weights=saved_models/ResNet56v2_4-layer_weights-200.h5
+python3 video_demo.py -l=4 -r --weights=saved_models/ResNet56v2_4-layer_weights-200.h5
 
 """
 
