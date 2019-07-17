@@ -242,13 +242,13 @@ if __name__ == '__main__':
     help_ = "Number of layers"
     parser.add_argument("-l",
                         "--layers",
-                        default=1,
+                        default=4,
                         type=int,
                         help=help_)
     help_ = "Batch size"
     parser.add_argument("-b",
                         "--batch_size",
-                        default=32,
+                        default=4,
                         type=int,
                         help=help_)
 
