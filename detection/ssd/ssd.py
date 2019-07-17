@@ -1,10 +1,10 @@
 """SSD model builder and trainer
 
 Train with 4 layers of feature maps:
-python3 ssd.py -l=4
+python3 ssd.py -l=4 -t -b=4
 
 Train from a previously saved model:
-python3 ssd.py -l=4 --weights=saved_models/ResNet56v2_4-layer_weights-200.h5
+python3 ssd.py -l=4 --weights=saved_models/ResNet56v2_4-layer_weights-200.h5 -t -b=4
 
 Evaluate:
 python3 ssd.py -l=4 -e --weights=saved_models/ResNet56v2_4-layer_weights-200.h5 --image_index=10
