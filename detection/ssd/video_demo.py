@@ -15,7 +15,7 @@ import config
 
 from ssd import SSD
 from resnet import build_resnet
-from viz_boxes import show_boxes
+from boxes import show_boxes
 from skimage.io import imread
 
 

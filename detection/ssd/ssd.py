@@ -47,7 +47,7 @@ import argparse
 from skimage.io import imread
 from data_generator import DataGenerator
 from label_utils import build_label_dictionary
-from viz_boxes import show_boxes
+from boxes import show_boxes
 from model import build_tinynet, build_ssd
 from resnet import build_resnet
 
