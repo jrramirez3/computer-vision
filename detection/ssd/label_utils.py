@@ -83,6 +83,7 @@ def build_label_dictionary(csv_path):
     return dictionary, classes
 
 
+# draw bounding box on an object given box coords (labels[1:5])
 def show_labels(image, labels, ax=None):
     if ax is None:
         fig, ax = plt.subplots(1)

@@ -7,10 +7,8 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-import tensorflow as tf
+import config
 from keras import backend as K
-from tensorflow.keras.layers import Layer
-from tensorflow.keras.utils import to_categorical
 
 def feature_boxes(image, feature_shape, index):
     #shift = [4, 5, 6, 7, 8] # image div by 2**4 to 2**8
@@ -23,6 +21,7 @@ def feature_boxes(image, feature_shape, index):
                          is_K_tensor=False)
     return feature_shape, boxes
 
+
 def anchor_sizes():
     d = np.linspace(0.15, 0.8, 6)
     sizes = []
@@ -33,8 +32,12 @@ def anchor_sizes():
 
     return sizes
 
+
 def anchor_aspect_ratios():
-    return [1, 2, 0.5]
+    aspect_ratios = config.params['aspect_ratios']
+    return aspect_ratios
+    #return [1, 2, 0.5]
+
 
 def anchor_boxes(feature_shape,
                  image_shape,
@@ -99,6 +102,8 @@ def anchor_boxes(feature_shape,
         boxes_tensor = np.tile(boxes_tensor, (feature_shape[0], 1, 1, 1, 1))
     return boxes_tensor
 
+
+
 def centroid2minmax(boxes_tensor):
     tensor = np.copy(boxes_tensor).astype(np.float)
     tensor[..., 0] = boxes_tensor[..., 0] - boxes_tensor[..., 2] / 2.0 # Set xmin
@@ -106,6 +111,7 @@ def centroid2minmax(boxes_tensor):
     tensor[..., 2] = boxes_tensor[..., 1] - boxes_tensor[..., 3] / 2.0 # Set ymin
     tensor[..., 3] = boxes_tensor[..., 1] + boxes_tensor[..., 3] / 2.0 # Set ymax
     return tensor
+
 
 def intersection(boxes1, boxes2):
     m = boxes1.shape[0] # The number of boxes in `boxes1`
