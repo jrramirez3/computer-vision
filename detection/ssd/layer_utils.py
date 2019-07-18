@@ -1,5 +1,8 @@
 """Layer utils
 
+Utility functions for computing IOU, anchor boxes, masks,
+and bounding box offsets
+
 """
 
 from __future__ import absolute_import
@@ -10,6 +13,8 @@ import numpy as np
 import config
 from keras import backend as K
 
+# linear distribution of sizes depending on 
+# the number of ssd top layers
 def anchor_sizes(n_layers=4):
     d = np.linspace(0.15, 0.8, n_layers + 1)
     sizes = []
@@ -22,12 +27,14 @@ def anchor_sizes(n_layers=4):
     return sizes
 
 
+# aspect ratios
 def anchor_aspect_ratios():
     aspect_ratios = config.params['aspect_ratios']
     return aspect_ratios
-    #return [1, 2, 0.5]
 
 
+# compute the anchor boxes per feature map
+# anchor boxes are in minmax format
 def anchor_boxes(feature_shape,
                  image_shape,
                  index=0,
@@ -45,12 +52,12 @@ def anchor_boxes(feature_shape,
     norm_height = image_height * sizes[0]
 
     wh_list = []
-    # anchor box by aspect ratio
+    # anchor box by aspect ratio on resized image dims
     for ar in aspect_ratios:
         box_height = norm_height / np.sqrt(ar)
         box_width = norm_width * np.sqrt(ar)
         wh_list.append((box_width, box_height))
-    # anchor box by size
+    # anchor box by size[1] for aspect_ratio = 1
     for size in sizes[1:]:
         box_height = image_height * size
         box_width = image_width * size
@@ -69,36 +76,38 @@ def anchor_boxes(feature_shape,
     end = (feature_width - 0.5) * grid_width
     cx = np.linspace(start, end, feature_width)
 
+    # grid of box centers
     cx_grid, cy_grid = np.meshgrid(cx, cy)
-    # This is necessary for np.tile() to do what we want further down
+    # for np.tile()
     cx_grid = np.expand_dims(cx_grid, -1) 
-    # This is necessary for np.tile() to do what we want further down
     cy_grid = np.expand_dims(cy_grid, -1)
-    # Create a 4D tensor template of shape `(feature_map_height, feature_map_width, n_boxes, 4)`
-    # where the last dimension will contain `(cx, cy, w, h)`
+    # tensor = (feature_map_height, feature_map_width, n_boxes, 4)
+    # last dimension = (cx, cy, w, h)
     boxes_tensor = np.zeros((feature_height, feature_width, n_boxes, 4))
-    boxes_tensor[:, :, :, 0] = np.tile(cx_grid, (1, 1, n_boxes)) # Set cx
-    boxes_tensor[:, :, :, 1] = np.tile(cy_grid, (1, 1, n_boxes)) # Set cy
-    boxes_tensor[:, :, :, 2] = wh_list[:, 0] # Set w
-    boxes_tensor[:, :, :, 3] = wh_list[:, 1] # Set h
-    # Convert `(cx, cy, w, h)` to `(xmin, xmax, ymin, ymax)`
-    # Now prepend one dimension to `boxes_tensor` to account for the batch size and tile it along
-    # The result will be a 5D tensor of shape `(batch_size, feature_map_height, feature_map_width, n_boxes, 4)`
+    boxes_tensor[:, :, :, 0] = np.tile(cx_grid, (1, 1, n_boxes))
+    boxes_tensor[:, :, :, 1] = np.tile(cy_grid, (1, 1, n_boxes))
+    boxes_tensor[:, :, :, 2] = wh_list[:, 0]
+    boxes_tensor[:, :, :, 3] = wh_list[:, 1]
+    # convert (cx, cy, w, h) to (xmin, xmax, ymin, ymax)
+    # prepend one dimension to boxes_tensor 
+    # to account for the batch size and tile it along
+    # the result will be a 5D tensor of shape 
+    # (batch_size, feature_map_height, feature_map_width, n_boxes, 4)
     boxes_tensor = centroid2minmax(boxes_tensor)
     boxes_tensor = np.expand_dims(boxes_tensor, axis=0)
     boxes_tensor = np.tile(boxes_tensor, (feature_shape[0], 1, 1, 1, 1))
     return boxes_tensor
 
-
+# centroid format to minmax format
 def centroid2minmax(boxes_tensor):
     tensor = np.copy(boxes_tensor).astype(np.float)
-    tensor[..., 0] = boxes_tensor[..., 0] - boxes_tensor[..., 2] / 2.0 # Set xmin
-    tensor[..., 1] = boxes_tensor[..., 0] + boxes_tensor[..., 2] / 2.0 # Set xmax
-    tensor[..., 2] = boxes_tensor[..., 1] - boxes_tensor[..., 3] / 2.0 # Set ymin
-    tensor[..., 3] = boxes_tensor[..., 1] + boxes_tensor[..., 3] / 2.0 # Set ymax
+    tensor[..., 0] = boxes_tensor[..., 0] - boxes_tensor[..., 2] / 2.0
+    tensor[..., 1] = boxes_tensor[..., 0] + boxes_tensor[..., 2] / 2.0
+    tensor[..., 2] = boxes_tensor[..., 1] - boxes_tensor[..., 3] / 2.0
+    tensor[..., 3] = boxes_tensor[..., 1] + boxes_tensor[..., 3] / 2.0
     return tensor
 
-
+# compute intersection of boxes1 and boxes2
 def intersection(boxes1, boxes2):
     m = boxes1.shape[0] # The number of boxes in `boxes1`
     n = boxes2.shape[0] # The number of boxes in `boxes2`
@@ -126,17 +135,16 @@ def intersection(boxes1, boxes2):
     return intersection_areas
 
 
+# compute union of boxes1 and boxes2
 def union(boxes1, boxes2, intersection_areas):
-    m = boxes1.shape[0] # The number of boxes in `boxes1`
-    n = boxes2.shape[0] # The number of boxes in `boxes2`
+    m = boxes1.shape[0] # number of boxes in boxes1
+    n = boxes2.shape[0] # number of boxes in boxes2
 
     xmin = 0
     xmax = 1
     ymin = 2
     ymax = 3
 
-    # areas = (boxes1[:, xmax] - boxes1[:, xmin]) 
-    # * (boxes1[:, ymax] - boxes1[:, ymin])
     width = (boxes1[:, xmax] - boxes1[:, xmin])
     height = (boxes1[:, ymax] - boxes1[:, ymin])
     areas = width * height
@@ -150,84 +158,13 @@ def union(boxes1, boxes2, intersection_areas):
     return union_areas
 
 
+# compute iou of boxes1 and boxes2
 def iou(boxes1, boxes2):
     intersection_areas = intersection(boxes1, boxes2)
     union_areas = union(boxes1, boxes2, intersection_areas)
     return intersection_areas / union_areas
 
-
-def maxiou(iou, anchors_array_shape, n_classes=6, anchors=None, labels=None):
-    iou_mask = np.zeros(iou.shape)
-    maxiou_per_gt = np.argmax(iou, axis=0)
-    print("IOU[0]: ", iou[maxiou_per_gt[0]])
-    iou_rows = np.argmax(iou[maxiou_per_gt], axis=1)
-    #maxiou = np.append(maxiou_per_gt, iou_rows, axis=1)
-    print("IOU Rows shape:", iou_rows.shape)
-    print("MaxIOU: ", maxiou_per_gt)
-    print("MaxIOU shape: ", maxiou_per_gt.shape)
-    a = np.reshape(maxiou_per_gt, (maxiou_per_gt.shape[0], 1))
-    b = np.reshape(iou_rows, (iou_rows.shape[0], 1))
-    maxiou = np.append(a, b, axis=1)
-    print("maxiou shape: ", maxiou.shape)
-    # for i in range(maxiou.shape[0]):
-    #    iou_mask[maxiou[i][0], maxiou[i][1]]  = 1.0
-    iou_mask[maxiou[:,0], maxiou[:,1]]  = 1.0
-    print("IOU Mask[0]: ", iou_mask[maxiou_per_gt[0], iou_rows[0]])
-    print("IOU[0]: ", iou[maxiou_per_gt[0], iou_rows[0]])
-    print("IOU Mask uniques:", np.unique(iou_mask))
-    print("IOU Mask Shape: ", iou_mask.shape)
-    unique, counts = np.unique(iou_mask, return_counts=True)
-    d = dict(zip(unique, counts))
-    print("dict of counts: ", d)
-    masked_ious = np.multiply(iou, iou_mask)
-    print("Masked IOU:", np.unique(masked_ious))
-    # maxiou = np.reshape(maxiou, [-1, 2])
-    print(maxiou_per_gt)
-    print(iou_rows)
-    print(maxiou)
-   
-    # mask generation
-    gt_mask = np.zeros((iou.shape[0], 4))
-    gt_mask[maxiou_per_gt] = 1.0
-    print("Mask uniques:", np.unique(gt_mask, return_counts=True))
-    print("Mask Shape: ", gt_mask.shape)
-    print("Mask[0]: ", gt_mask[0])
-    for i in range(labels.shape[0]):
-        print(gt_mask[maxiou_per_gt[i]])
-
-    # class generation
-    gt_class = np.zeros((iou.shape[0], n_classes))
-    gt_class[:, 0] = 1
-    gt_class[maxiou_per_gt, 0] = 0
-    maxiou_col = np.reshape(maxiou_per_gt, (maxiou_per_gt.shape[0], 1))
-    label_col = np.reshape(labels[:,4], (labels.shape[0], 1)).astype(int)
-    row_col = np.append(maxiou_col, label_col, axis=1)
-    gt_class[row_col[:,0], row_col[:,1]]  = 1.0
-    print("Class uniques:", np.unique(gt_class, return_counts=True))
-    print("Class Shape: ", gt_class.shape)
-    print("Class[0]: ", gt_class[0])
-    for i in range(labels.shape[0]):
-        print(gt_class[maxiou_per_gt[i]])
-
-
-    # offset generation
-    gt_offset = np.zeros((iou.shape[0], 4))
-    anchors = np.reshape(anchors, [-1, 4])
-    offsets = labels[:,0:4] - anchors[maxiou_per_gt]
-    gt_offset[maxiou_per_gt] = offsets
-    print("Offset Shape: ", gt_offset.shape)
-    print("Offset[0]: ", gt_offset[0])
-    for i in range(labels.shape[0]):
-        print(gt_offset[maxiou_per_gt[i]])
-
-    
-    maxiou_indexes = np.array(np.unravel_index(maxiou_per_gt, anchors_array_shape))
-    maxiou_per_gt = iou[maxiou_per_gt]
-    print("MaxIOU GT shape: ", maxiou_per_gt.shape)
-    print("MaxIOU indexes shape: ", maxiou_indexes.shape)
-    return maxiou_per_gt, maxiou_indexes
-
-
+# retriev ground truth class, bbox offset, and mask
 def get_gt_data(iou, n_classes=6, anchors=None, labels=None):
     maxiou_per_gt = np.argmax(iou, axis=0)
     # mask generation
