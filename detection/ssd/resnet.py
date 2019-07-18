@@ -1,4 +1,5 @@
-"""ResNet
+"""ResNet model builder as SSD backbone
+Adopted fr Chapter 2 of ADL - Deep Networks
 
 ResNet v1
 [a] Deep Residual Learning for Image Recognition
@@ -13,7 +14,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from tensorflow.keras.layers import Dense, Conv2D, BatchNormalization, Activation
+from tensorflow.keras.layers import Dense, Conv2D
+from tensorflow.keras.layers import BatchNormalization, Activation
 from tensorflow.keras.layers import AveragePooling2D, Input, Flatten
 from tensorflow.keras.layers import Add
 from tensorflow.keras.regularizers import l2
@@ -23,7 +25,6 @@ import numpy as np
 
 from model import conv_layer
 
-# ----------------------------------------------------------------------------
 #           |      | 200-epoch | Orig Paper| 200-epoch | Orig Paper| sec/epoch
 # Model     |  n   | ResNet v1 | ResNet v1 | ResNet v2 | ResNet v2 | GTX1080Ti
 #           |v1(v2)| %Accuracy | %Accuracy | %Accuracy | %Accuracy | v1 (v2)
@@ -143,17 +144,14 @@ def resnet_v1(input_shape, depth, num_classes=10):
             x = Activation('relu')(x)
         num_filters *= 2
 
-    # Add classifier on top.
-    # v1 does not use BN after last shortcut connection-ReLU
+    # 1st feature map layer
     conv = AveragePooling2D(pool_size=4, name='pool1')(x)
-    # y = Flatten()(x)
-    # outputs = Dense(num_classes,
-    #                activation='softmax',
-    #                kernel_initializer='he_normal')(y)
+
     outputs = [conv]
     prev_conv = conv
     n_filters = 64
 
+    # additional feature map layers
     for i in range(n_layers - 1):
         postfix = "_layer" + str(i+2)
         conv = conv_layer(prev_conv,
@@ -167,7 +165,7 @@ def resnet_v1(input_shape, depth, num_classes=10):
         n_filters *= 2
     
 
-    # Instantiate model.
+    # instantiate model
     name = 'ResNet%dv1' % (depth)
     model = Model(inputs=inputs,
                   outputs=outputs,
@@ -256,19 +254,16 @@ def resnet_v2(input_shape, depth, n_layers=4):
 
         num_filters_in = num_filters_out
 
-    # add classifier on top.
     # v2 has BN-ReLU before Pooling
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
+    # 1st feature map layer
     conv = AveragePooling2D(pool_size=4, name='pool1')(x)
-    # y = Flatten()(x)
-    # outputs = Dense(num_classes,
-    #                activation='softmax',
-    #                kernel_initializer='he_normal')(y)
     outputs = [conv]
     prev_conv = conv
     n_filters = 64
 
+    # additional feature map layers
     for i in range(n_layers - 1):
         postfix = "_layer" + str(i+2)
         conv = conv_layer(prev_conv,
