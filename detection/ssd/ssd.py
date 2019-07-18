@@ -1,14 +1,26 @@
-"""SSD model builder and trainer
+"""SSD class to build, train, eval SSD models
 
-Train with 4 layers of feature maps. Pls adjust batch size depending on your GPU memory.
-For 1060, -b=1. For V100 32GB, -b=4
-python3 ssd.py -l=4 -t -b=4
+1)  ResNet50 (v2) backbone.
+    Train with 4 layers of feature maps.
+    Pls adjust batch size depending on your GPU memory.
+    For 1060, -b=1. For V100 32GB, -b=4
 
-Train from a previously saved model:
-python3 ssd.py -l=4 --weights=saved_models/ResNet56v2_4-layer_weights-200.h5 -t -b=4
+python3 ssd.py -t -b=4
 
-Evaluate:
-python3 ssd.py -e --weights=saved_models/ResNet56v2_4-layer_weights-200.h5 --image_file=dataset/drinks/0010000.jpg
+2)  ResNet50 (v2) backbone.
+    Train from a previously saved model:
+
+python3 ssd.py --weights=saved_models/ResNet56v2_4-layer_weights-200.h5 -t -b=4
+
+2)  ResNet50 (v2) backbone.
+    Evaluate:
+
+python3 ssd.py -e --weights=saved_models/ResNet56v2_4-layer_weights-200.h5 \
+        --image_file=dataset/drinks/0010000.jpg
+
+3) TinyNet backbone
+
+python3 ssd.py -t -b=4 --tiny
 
 """
 
@@ -34,9 +46,9 @@ import argparse
 
 from skimage.io import imread
 from data_generator import DataGenerator
-from model import build_tinynet, build_ssd
 from label_utils import build_label_dictionary
 from viz_boxes import show_boxes
+from model import build_tinynet, build_ssd
 from resnet import build_resnet
 
 def lr_scheduler(epoch):
@@ -58,8 +70,8 @@ class SSD():
                  n_layers=4,
                  batch_size=4,
                  epochs=200,
-                 workers=16,
-                 build_basenet=build_tinynet):
+                 workers=8,
+                 build_basenet=build_resnet):
         self.n_layers = n_layers
         self.batch_size = batch_size
         self.epochs = epochs
@@ -67,6 +79,7 @@ class SSD():
         self.train_generator = None
         self.test_generator = None
         self.build_model(build_basenet)
+
 
     def build_model(self, build_basenet):
         self.build_dictionary()
@@ -195,10 +208,6 @@ class SSD():
     def evaluate(self, image_file=None, image=None):
         show = False
         if image is None:
-            #target_file = "%07d" % image_index
-            #target_file += ".jpg"
-            #image_path = os.path.join(config.params['data_path'], image_file)
-            # self.test_keys[image_index])
             image = skimage.img_as_float(imread(image_file))
             show = True
 
@@ -269,15 +278,15 @@ if __name__ == '__main__':
 
     # build ssd using simple cnn backbone
     if args.tiny:
-        ssd = SSD(n_layers=args.layers,
-                  batch_size=args.batch_size,
-                  workers=args.workers)
+        build_basenet = build_tinynet
     # build ssd using resnet50 backbone
     else:
-        ssd = SSD(n_layers=args.layers,
-                  build_basenet=build_resnet,
-                  batch_size=args.batch_size,
-                  workers=args.workers)
+        build_basenet = build_resnet
+
+    ssd = SSD(n_layers=args.layers,
+              batch_size=args.batch_size,
+              workers=args.workers,
+              build_basenet=build_basenet)
 
     if args.weights:
         ssd.load_weights(args.weights)
