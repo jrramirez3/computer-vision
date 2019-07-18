@@ -1,6 +1,7 @@
 """SSD model builder and trainer
 
-Train with 4 layers of feature maps:
+Train with 4 layers of feature maps. Pls adjust batch size depending on your GPU memory.
+For 1060, -b=1. For V100 32GB, -b=4
 python3 ssd.py -l=4 -t -b=4
 
 Train from a previously saved model:
