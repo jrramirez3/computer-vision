@@ -111,6 +111,7 @@ class SSD():
                                              input_shape=self.input_shape,
                                              feature_shapes=self.feature_shapes,
                                              n_anchors=self.n_anchors,
+                                             n_layers=self.n_layers,
                                              batch_size=self.batch_size,
                                              shuffle=True)
 
@@ -123,6 +124,7 @@ class SSD():
                                             input_shape=self.input_shape,
                                             feature_shapes=self.feature_shapes,
                                             n_anchors=self.n_anchors,
+                                            n_layers=self.n_layers,
                                             batch_size=self.batch_size,
                                             shuffle=True)
 

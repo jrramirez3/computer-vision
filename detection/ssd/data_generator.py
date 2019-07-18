@@ -34,6 +34,7 @@ class DataGenerator(Sequence):
                  input_shape=(480, 640, 3),
                  feature_shapes=[],
                  n_anchors=3,
+                 n_layers=4,
                  batch_size=4,
                  shuffle=True,
                  aug_data=False):
@@ -44,6 +45,7 @@ class DataGenerator(Sequence):
         self.input_shape = input_shape
         self.feature_shapes = feature_shapes
         self.n_anchors = n_anchors
+        self.n_layers = n_layers
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.aug_data = aug_data
@@ -130,7 +132,8 @@ class DataGenerator(Sequence):
                 shape = (1, *shape)
                 anchors = anchor_boxes(shape,
                                        image.shape,
-                                       index=index)
+                                       index=index,
+                                       n_layers=self.n_layers)
                 anchors = np.reshape(anchors, [-1, 4])
                 iou = layer_utils.iou(anchors, boxes)
                 ret = get_gt_data(iou,

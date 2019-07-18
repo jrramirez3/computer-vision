@@ -10,20 +10,8 @@ import numpy as np
 import config
 from keras import backend as K
 
-def feature_boxes(image, feature_shape, index):
-    #shift = [4, 5, 6, 7, 8] # image div by 2**4 to 2**8
-    #feature_height = image.shape[0] >> shift[index]
-    #feature_width = image.shape[1] >> shift[index]
-    #feature_shape = (1, feature_height, feature_width, image.shape[-1])
-    boxes = anchor_boxes(feature_shape,
-                         image.shape,
-                         index=index,
-                         is_K_tensor=False)
-    return feature_shape, boxes
-
-
-def anchor_sizes():
-    d = np.linspace(0.15, 0.8, 6)
+def anchor_sizes(n_layers=4):
+    d = np.linspace(0.15, 0.8, n_layers + 1)
     sizes = []
     for i in range(len(d)-1):
         # size = [d[i], math.sqrt(d[i] * d[i + 1])]
@@ -42,12 +30,12 @@ def anchor_aspect_ratios():
 def anchor_boxes(feature_shape,
                  image_shape,
                  index=0,
-                 is_K_tensor=False):
+                 n_layers=4):
     
-    sizes = anchor_sizes()[index]
+    sizes = anchor_sizes(n_layers)[index]
     aspect_ratios = anchor_aspect_ratios()
-    #print("sizes: ", sizes)
-    #print("aspect ratios: ", aspect_ratios)
+    # print("index: ", index, "sizes: ", sizes)
+    # print("index: ", index, "aspect ratios: ", aspect_ratios)
     n_boxes = len(aspect_ratios) + len(sizes) - 1
     image_height, image_width, _ = image_shape
     _, feature_height, feature_width, _ = feature_shape
@@ -96,10 +84,7 @@ def anchor_boxes(feature_shape,
     # The result will be a 5D tensor of shape `(batch_size, feature_map_height, feature_map_width, n_boxes, 4)`
     boxes_tensor = centroid2minmax(boxes_tensor)
     boxes_tensor = np.expand_dims(boxes_tensor, axis=0)
-    if is_K_tensor:
-        boxes_tensor = K.tile(K.constant(boxes_tensor, dtype='float32'), (K.shape(x)[0], 1, 1, 1, 1))
-    else:
-        boxes_tensor = np.tile(boxes_tensor, (feature_shape[0], 1, 1, 1, 1))
+    boxes_tensor = np.tile(boxes_tensor, (feature_shape[0], 1, 1, 1, 1))
     return boxes_tensor
 
 
