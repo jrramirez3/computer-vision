@@ -8,7 +8,7 @@ Train from a previously saved model:
 python3 ssd.py -l=4 --weights=saved_models/ResNet56v2_4-layer_weights-200.h5 -t -b=4
 
 Evaluate:
-python3 ssd.py -l=4 -e --weights=saved_models/ResNet56v2_4-layer_weights-200.h5 --image_index=10
+python3 ssd.py -e --weights=saved_models/ResNet56v2_4-layer_weights-200.h5 --image_file=dataset/drinks/0010000.jpg
 
 """
 
@@ -221,13 +221,12 @@ class SSD():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    help_ = "Use ResNet50 v2 as base network"
-    parser.add_argument("-r",
-                        "--resnet",
-                        default=True,
+    help_ = "Use tinynet as base network"
+    parser.add_argument("--tiny",
+                        default=False,
                         action='store_true',
                         help=help_)
-    help_ = "Number of top feature map layers"
+    help_ = "Num of ssd top feature map layers"
     parser.add_argument("-l",
                         "--layers",
                         default=4,
@@ -268,15 +267,15 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    # build ssd using resnet50 backbone
-    if args.resnet:
+    # build ssd using simple cnn backbone
+    if args.tiny:
         ssd = SSD(n_layers=args.layers,
-                  build_basenet=build_resnet,
                   batch_size=args.batch_size,
                   workers=args.workers)
-    # build ssd using simple cnn backbone
+    # build ssd using resnet50 backbone
     else:
         ssd = SSD(n_layers=args.layers,
+                  build_basenet=build_resnet,
                   batch_size=args.batch_size,
                   workers=args.workers)
 
