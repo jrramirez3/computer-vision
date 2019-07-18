@@ -1,4 +1,8 @@
-"""Labels utils
+"""Label utility functions
+
+Main use: labeling, dictionary of colors,
+label retrieval, loading label csv file,
+drawing label on an image
 
 """
 
@@ -8,38 +12,37 @@ from __future__ import print_function
 
 import numpy as np
 import csv
-import math
+import config
 import matplotlib.pyplot as plt
+
 from matplotlib.patches import Rectangle
 from random import randint
-import config
 
-
+# retrieve plt-compatible color string based on object index
 def get_box_color(index=None):
     colors = ['w', 'r', 'b', 'g', 'c', 'm', 'y', 'g', 'c', 'm', 'k']
     if index is None:
         return colors[randint(0, len(colors) - 1)]
     return colors[index % len(colors)]
 
-
+# retrieve rgb color based on object index
 def get_box_rgbcolor(index=None):
     colors = [(0, 0, 0), (255, 0, 0), (0, 0, 255), (0, 255, 0), (128, 128, 0)]
     if index is None:
         return colors[randint(0, len(colors) - 1)]
     return colors[index % len(colors)]
 
-
+# convert index (int) to class name (string)
 def index2class(index=0):
-    #classes = ["background", "Summit", "Coke", "PineJuice"]
     classes = config.params['classes']
     return classes[index]
 
+# convert class name (string) to index (int)
 def class2index(class_="background"):
-    # classes = ["background", "Summit", "Coke", "PineJuice"]
     classes = config.params['classes']
     return classes.index(class_)
 
-
+# load a csv file into an np array
 def load_csv(path):
     data = []
     with open(path) as csv_file:
@@ -49,7 +52,7 @@ def load_csv(path):
 
     return np.array(data)
 
-
+# associate key (filename) to value (box coords, class)
 def get_label_dictionary(labels, keys):
     dictionary = {}
     # boxes = []
@@ -66,16 +69,19 @@ def get_label_dictionary(labels, keys):
 
     return dictionary
 
+
+# build a dict with key=filename, value=[box coords, class]
 def build_label_dictionary(csv_path):
     labels = load_csv(csv_path)
+    # skip the 1st line header
     labels = labels[1:]
     keys = np.unique(labels[:,0])
     dictionary = get_label_dictionary(labels, keys)
     classes = np.unique(labels[:,-1]).astype(int).tolist()
     classes.insert(0, 0)
-    # classes = np.reshape(classes, (-1,))
-    print("unique classes: ", classes)
+    print("Num of unique classes: ", classes)
     return dictionary, classes
+
 
 def show_labels(image, labels, ax=None):
     if ax is None:

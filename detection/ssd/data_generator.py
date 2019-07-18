@@ -1,4 +1,6 @@
 """Data generator
+This is a scalable and efficient way of reading huge images
+as dataset of SSD model.
 
 """
 
@@ -6,43 +8,44 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from tensorflow.python.keras.utils.data_utils import Sequence
+
 import numpy as np
 import keras
 import layer_utils
 import label_utils
 import os
 import skimage
+
 from layer_utils import get_gt_data
 from skimage.io import imread
 from layer_utils import anchor_boxes
-import config
-from tensorflow.python.keras.utils.data_utils import Sequence
+
 from skimage.util import random_noise
 from skimage import exposure
 
 
 class DataGenerator(Sequence):
-
     def __init__(self,
                  dictionary,
                  n_classes,
                  params=config.params,
-                 input_shape=(300, 480, 3),
+                 input_shape=(480, 640, 3),
                  feature_shapes=[],
-                 n_anchors=0,
-                 batch_size=32,
-                 shuffle=True):
+                 n_anchors=3,
+                 batch_size=4,
+                 shuffle=True,
+                 aug_data=False):
         self.dictionary = dictionary
         self.n_classes = n_classes
         self.keys = np.array(list(self.dictionary.keys()))
         self.params = params
         self.input_shape = input_shape
         self.feature_shapes = feature_shapes
-        # self.feature_shape = (1, *feature_shape)
-        # print("feature shape: ", self.feature_shape)
         self.n_anchors = n_anchors
         self.batch_size = batch_size
         self.shuffle = shuffle
+        self.aug_data = aug_data
         self.n_layers = len(feature_shapes)
         self.on_epoch_end()
         self.get_n_boxes()
@@ -74,37 +77,53 @@ class DataGenerator(Sequence):
         return self.n_boxes
 
 
+    def apply_random_noise(self, image, percent=30):
+        random = np.random.randint(0, 100)
+        if random < percent:
+            image = random_noise(image)
+        return image
+
+
+    def apply_random_intensity_rescale(self, image, percent=30):
+        random = np.random.randint(0, 100)
+        if random < percent:
+            v_min, v_max = np.percentile(image, (0.2, 99.8))
+            image = exposure.rescale_intensity(image, in_range=(v_min, v_max))
+        return image
+
+
+    def apply_random_exposure_adjust(self, image, percent=30):
+        random = np.random.randint(0, 100)
+        if random < percent:
+            image = exposure.adjust_gamma(image, gamma=0.4, gain=0.9)
+            # another exposure algo
+            # image = exposure.adjust_log(image)
+        return image
+
+
     def __data_generation(self, keys):
         data_path = self.params['data_path']
         x = np.empty((self.batch_size, *self.input_shape))
-        # n_boxes = np.prod(self.feature_shape) // self.n_anchors
         gt_class = np.empty((self.batch_size, self.n_boxes, self.n_classes))
         gt_offset = np.empty((self.batch_size, self.n_boxes, 4))
         gt_mask = np.empty((self.batch_size, self.n_boxes, 4))
 
         for i, key in enumerate(keys):
+            # images are assumed to be stored in config data_path
+            # key is the imagee filename 
             image_path = os.path.join(data_path, key)
             image = skimage.img_as_float(imread(image_path))
 
-            #random = np.random.randint(0, 100)
-            #if random < 30:
-            #    image = random_noise(image)
-
-            #random = np.random.randint(0, 100)
-            #if random < 80:
-            #    v_min, v_max = np.percentile(image, (0.2, 99.8))
-            #    image = exposure.rescale_intensity(image, in_range=(v_min, v_max))
-
-            #random = np.random.randint(0, 100)
-            #if random < 80:
-            #    if random < 40:
-            #        image = exposure.adjust_gamma(image, gamma=0.4, gain=0.9)
-            #    else:
-            #        image = exposure.adjust_log(image)
+            # if augment data is enabled
+            if self.aug_data:
+                image = self.apply_random_noise(image)
+                image = self.apply_random_intensity_rescale(image)
+                image = self.apply_random_exposure_adjust(image)
 
             x[i] = image
             labels = self.dictionary[key]
             labels = np.array(labels)
+            # 4 boxes coords are 1st four items of labels
             boxes = labels[:,0:-1]
             for index, shape in enumerate(self.feature_shapes):
                 shape = (1, *shape)
