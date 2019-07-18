@@ -290,19 +290,13 @@ def resnet_v2(input_shape, depth, n_layers=4):
     return model
 
 
-#if version == 2:
-#    model = resnet_v2(input_shape=input_shape, depth=depth)
-#else:
-#
-
 def build_resnet(input_shape,
                  n_layers=4,
                  version=2,
                  n=6):
     # model version
     # orig paper: version = 1 (ResNet v1),
-    # Improved ResNet: version = 2 (ResNet v2)
-    version = 2
+    # improved ResNet: version = 2 (ResNet v2)
 
     # computed depth from supplied model parameter n
     if version == 1:
@@ -311,7 +305,7 @@ def build_resnet(input_shape,
         depth = n * 9 + 2
 
     # model name, depth and version
-    # input_shape = (300, 480, 3)
+    # input_shape (h, w, 3)
     if version==1:
         model = resnet_v1(input_shape=input_shape,
                           depth=depth,
@@ -320,6 +314,4 @@ def build_resnet(input_shape,
         model = resnet_v2(input_shape=input_shape,
                           depth=depth,
                           n_layers=n_layers)
-    # model.summary()
-    # print(model_type)
     return model

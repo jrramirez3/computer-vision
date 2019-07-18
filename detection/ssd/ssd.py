@@ -54,8 +54,8 @@ def lr_scheduler(epoch):
 
 class SSD():
     def __init__(self,
-                 n_layers=1,
-                 batch_size=8,
+                 n_layers=4,
+                 batch_size=4,
                  epochs=200,
                  workers=16,
                  build_basenet=build_tinynet):
@@ -74,8 +74,6 @@ class SSD():
                                   self.keys[0])
         image = skimage.img_as_float(imread(image_path))
         self.input_shape = image.shape
-        #basenetwork = build_basenetwork(self.input_shape,
-        #                                n_layers=self.n_layers)
         self.basenetwork = build_basenet(self.input_shape,
                                          n_layers=self.n_layers)
         self.basenetwork.summary()
@@ -102,6 +100,8 @@ class SSD():
                                              batch_size=self.batch_size,
                                              shuffle=True)
 
+        return
+        # we skip the test data generator since it is time consuming
         # multi-thread test data generator
         self.test_generator = DataGenerator(dictionary=self.test_dictionary,
                                             n_classes=self.n_classes,
@@ -123,14 +123,15 @@ class SSD():
         self.n_classes = len(self.classes)
         self.keys = np.array(list(self.dictionary.keys()))
 
+        return
         csv_path = os.path.join(config.params['data_path'],
                                 config.params['test_labels'])
         self.test_dictionary, _ = build_label_dictionary(csv_path)
         self.test_keys = np.array(list(self.test_dictionary.keys()))
 
 
-    def classes_loss(self, y_true, y_pred):
-        return K.categorical_crossentropy(y_true, y_pred)
+    #def classes_loss(self, y_true, y_pred):
+    #    return K.categorical_crossentropy(y_true, y_pred)
 
 
     def offsets_loss(self, y_true, y_pred):
@@ -160,10 +161,10 @@ class SSD():
         save_dir = os.path.join(os.getcwd(), 'saved_models')
         model_name = self.basenetwork.name
         model_name += '_' + str(self.n_layers)
-        model_name +=  '-layer_weights-{epoch:03d}.h5'
+        model_name += '-layer_weights-{epoch:03d}.h5'
 
         print("Batch size: ", self.batch_size)
-        print("Weights file: ", model_name)
+        print("Weights filename: ", model_name)
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
         filepath = os.path.join(save_dir, model_name)
@@ -176,25 +177,28 @@ class SSD():
 
         callbacks = [checkpoint, scheduler]
         self.ssd.fit_generator(generator=self.train_generator,
+                               # disable time-consuming validation 
                                # validation_data=self.test_generator,
                                use_multiprocessing=True,
                                callbacks=callbacks,
                                epochs=self.epochs,
                                workers=self.workers)
 
+
     def load_weights(self, weights):
-        print("Loading weights : ", weights)
+        print("Loading weights: ", weights)
         self.ssd.load_weights(weights)
 
-    # evaluate image based on its index number (id)
-    def evaluate(self, image_index=10000, image=None):
+
+    # evaluate image based on image (np tensor) or filename
+    def evaluate(self, image_file=None, image=None):
         show = False
         if image is None:
-            target_file = "%07d" % image_index
-            target_file += ".jpg"
-            image_path = os.path.join(config.params['data_path'], target_file)
+            #target_file = "%07d" % image_index
+            #target_file += ".jpg"
+            #image_path = os.path.join(config.params['data_path'], image_file)
             # self.test_keys[image_index])
-            image = skimage.img_as_float(imread(image_path))
+            image = skimage.img_as_float(imread(image_file))
             show = True
 
         image = np.expand_dims(image, axis=0)
@@ -213,33 +217,16 @@ class SSD():
                                         show=show)
         return class_names, rects
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    help_ = "Load h5 model trained weights"
-    parser.add_argument("-w", "--weights", help=help_)
-    help_ = "Train model"
-    parser.add_argument("-t",
-                        "--train",
-                        action='store_true',
-                        help=help_)
-    help_ = "Evaluate model"
-    parser.add_argument("-e",
-                        "--evaluate",
-                        default=False,
-                        action='store_true', 
-                        help=help_)
-    help_ = "Use ResNetv2 as base network"
+    help_ = "Use ResNet50 v2 as base network"
     parser.add_argument("-r",
                         "--resnet",
                         default=True,
                         action='store_true',
                         help=help_)
-    help_ = "Image index"
-    parser.add_argument("--image_index",
-                        default=0,
-                        type=int,
-                        help=help_)
-    help_ = "Number of layers"
+    help_ = "Number of top feature map layers"
     parser.add_argument("-l",
                         "--layers",
                         default=4,
@@ -251,24 +238,51 @@ if __name__ == '__main__':
                         default=4,
                         type=int,
                         help=help_)
+    help_ = "Number of workers thread"
+    parser.add_argument("--workers",
+                        default=8,
+                        type=int,
+                        help=help_)
+    help_ = "Train model"
+    parser.add_argument("-t",
+                        "--train",
+                        action='store_true',
+                        help=help_)
+    help_ = "Load h5 model trained weights"
+    parser.add_argument("-w",
+                        "--weights",
+                        help=help_)
+
+    help_ = "Evaluate model"
+    parser.add_argument("-e",
+                        "--evaluate",
+                        default=False,
+                        action='store_true', 
+                        help=help_)
+    help_ = "Image file for evaluation"
+    parser.add_argument("--image_file",
+                        default="0010000.jpg",
+                        help=help_)
 
 
     args = parser.parse_args()
 
+    # build ssd using resnet50 backbone
     if args.resnet:
         ssd = SSD(n_layers=args.layers,
                   build_basenet=build_resnet,
-                  batch_size=args.batch_size)
+                  batch_size=args.batch_size,
+                  workers=args.workers)
+    # build ssd using simple cnn backbone
     else:
         ssd = SSD(n_layers=args.layers,
-                  batch_size=args.batch_size)
+                  batch_size=args.batch_size,
+                  workers=args.workers)
 
     if args.weights:
         ssd.load_weights(args.weights)
         if args.evaluate:
-            ssd.evaluate(args.image_index)
+            ssd.evaluate(image_file=args.image_file)
             
     if args.train:
         ssd.train_model()
-
-    
