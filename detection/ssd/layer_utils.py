@@ -16,14 +16,13 @@ from keras import backend as K
 # linear distribution of sizes depending on 
 # the number of ssd top layers
 def anchor_sizes(n_layers=4):
-    d = np.linspace(0.15, 0.8, n_layers + 1)
+    # dx = np.linspace(0.2, 0.9, n_layers + 1)
+    # size = [d[i], (d[i] * 0.5)]
+    delta = [(1/16)*2**i for i in range(0, n_layers + 1)]
     sizes = []
-    for i in range(len(d)-1):
-        # we can also by sqrt
-        # size = [d[i], math.sqrt(d[i] * d[i + 1])]
-        size = [d[i], (d[i] * 0.5)]
+    for i in range(len(delta)-1):
+        size = [delta[i], math.sqrt(delta[i] * delta[i + 1])]
         sizes.append(size)
-
     return sizes
 
 
