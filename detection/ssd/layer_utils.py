@@ -11,6 +11,7 @@ from __future__ import print_function
 
 import numpy as np
 import config
+import math
 from keras import backend as K
 
 # linear distribution of sizes depending on 
