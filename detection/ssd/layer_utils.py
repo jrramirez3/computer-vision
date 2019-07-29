@@ -16,7 +16,7 @@ from keras import backend as K
 
 # linear distribution of sizes depending on 
 # the number of ssd top layers
-def anchor_sizes(n_layers=4):
+def anchor_sizes(n_layers=6):
     # dx = np.linspace(0.2, 0.9, n_layers + 1)
     # size = [d[i], (d[i] * 0.5)]
     s = [(1/16)*2**i for i in range(0, n_layers + 1)]
@@ -38,7 +38,7 @@ def anchor_aspect_ratios():
 def anchor_boxes(feature_shape,
                  image_shape,
                  index=0,
-                 n_layers=4):
+                 n_layers=6):
     
     sizes = anchor_sizes(n_layers)[index]
     aspect_ratios = anchor_aspect_ratios()

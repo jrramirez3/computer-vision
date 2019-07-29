@@ -67,7 +67,7 @@ def lr_scheduler(epoch):
 
 class SSD():
     def __init__(self,
-                 n_layers=4,
+                 n_layers=6,
                  batch_size=4,
                  epochs=200,
                  workers=8,
@@ -240,7 +240,7 @@ if __name__ == '__main__':
     help_ = "Num of ssd top feature map layers"
     parser.add_argument("-l",
                         "--layers",
-                        default=4,
+                        default=6,
                         type=int,
                         help=help_)
     help_ = "Batch size"

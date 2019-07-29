@@ -34,7 +34,7 @@ class DataGenerator(Sequence):
                  input_shape=(480, 640, 3),
                  feature_shapes=[],
                  n_anchors=3,
-                 n_layers=4,
+                 n_layers=6,
                  batch_size=4,
                  shuffle=True,
                  aug_data=False):
