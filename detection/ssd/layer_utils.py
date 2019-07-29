@@ -19,10 +19,10 @@ from keras import backend as K
 def anchor_sizes(n_layers=4):
     # dx = np.linspace(0.2, 0.9, n_layers + 1)
     # size = [d[i], (d[i] * 0.5)]
-    delta = [(1/16)*2**i for i in range(0, n_layers + 1)]
+    s = [(1/16)*2**i for i in range(0, n_layers + 1)]
     sizes = []
-    for i in range(len(delta)-1):
-        size = [delta[i], math.sqrt(delta[i] * delta[i + 1])]
+    for i in range(len(s)-1):
+        size = [s[i], math.sqrt(s[i] * s[i + 1])]
         sizes.append(size)
     return sizes
 
