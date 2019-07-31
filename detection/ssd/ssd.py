@@ -71,13 +71,15 @@ class SSD():
                  batch_size=4,
                  epochs=200,
                  workers=8,
-                 build_basenet=build_resnet):
+                 build_basenet=build_resnet,
+                 normalize=False):
         self.n_layers = n_layers
         self.batch_size = batch_size
         self.epochs = epochs
         self.workers = workers
         self.train_generator = None
         self.test_generator = None
+        self.normalize = normalize
         self.build_model(build_basenet)
 
 
@@ -113,7 +115,8 @@ class SSD():
                                              n_anchors=self.n_anchors,
                                              n_layers=self.n_layers,
                                              batch_size=self.batch_size,
-                                             shuffle=True)
+                                             shuffle=True,
+                                             normalize=self.normalize)
 
         return
         # we skip the test data generator since it is time consuming
@@ -259,6 +262,14 @@ if __name__ == '__main__':
                         "--train",
                         action='store_true',
                         help=help_)
+
+    help_ = "Normalize predictions"
+    parser.add_argument("-n",
+                        "--normalize",
+                        default=False,
+                        action='store_true', 
+                        help=help_)
+
     help_ = "Load h5 model trained weights"
     parser.add_argument("-w",
                         "--weights",
@@ -288,7 +299,8 @@ if __name__ == '__main__':
     ssd = SSD(n_layers=args.layers,
               batch_size=args.batch_size,
               workers=args.workers,
-              build_basenet=build_basenet)
+              build_basenet=build_basenet,
+              normalize=args.normalize)
 
     if args.weights:
         ssd.load_weights(args.weights)

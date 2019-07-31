@@ -98,13 +98,26 @@ def anchor_boxes(feature_shape,
     boxes_tensor = np.tile(boxes_tensor, (feature_shape[0], 1, 1, 1, 1))
     return boxes_tensor
 
-# centroid format to minmax format
+# centroid format to minmax format 
+# (cx, cy, w, h) to (xmin, xmax, ymin, ymax)
 def centroid2minmax(boxes_tensor):
     tensor = np.copy(boxes_tensor).astype(np.float)
-    tensor[..., 0] = boxes_tensor[..., 0] - boxes_tensor[..., 2] / 2.0
-    tensor[..., 1] = boxes_tensor[..., 0] + boxes_tensor[..., 2] / 2.0
-    tensor[..., 2] = boxes_tensor[..., 1] - boxes_tensor[..., 3] / 2.0
-    tensor[..., 3] = boxes_tensor[..., 1] + boxes_tensor[..., 3] / 2.0
+    tensor[..., 0] = boxes_tensor[..., 0] - (0.5 * boxes_tensor[..., 2])
+    tensor[..., 1] = boxes_tensor[..., 0] + (0.5 * boxes_tensor[..., 2])
+    tensor[..., 2] = boxes_tensor[..., 1] - (0.5 * boxes_tensor[..., 3])
+    tensor[..., 3] = boxes_tensor[..., 1] + (0.5 * boxes_tensor[..., 3])
+    return tensor
+
+# minmax to centroid format
+# (xmin, xmax, ymin, ymax) to (cx, cy, w, h)
+def minmax2centroid(boxes_tensor):
+    tensor = np.copy(boxes_tensor).astype(np.float)
+    tensor[..., 0] = 0.5 * (boxes_tensor[..., 1] - boxes_tensor[..., 0])
+    tensor[..., 0] += boxes_tensor[..., 0] 
+    tensor[..., 1] = 0.5 * (boxes_tensor[..., 3] - boxes_tensor[..., 2])
+    tensor[..., 1] += boxes_tensor[..., 2] 
+    tensor[..., 2] = boxes_tensor[..., 1] - boxes_tensor[..., 0]
+    tensor[..., 3] = boxes_tensor[..., 3] - boxes_tensor[..., 2]
     return tensor
 
 # compute intersection of boxes1 and boxes2
@@ -165,7 +178,11 @@ def iou(boxes1, boxes2):
     return intersection_areas / union_areas
 
 # retriev ground truth class, bbox offset, and mask
-def get_gt_data(iou, n_classes=6, anchors=None, labels=None):
+def get_gt_data(iou,
+                n_classes=6,
+                anchors=None,
+                labels=None,
+                normalize=False):
     maxiou_per_gt = np.argmax(iou, axis=0)
     # mask generation
     gt_mask = np.zeros((iou.shape[0], 4))
@@ -186,7 +203,30 @@ def get_gt_data(iou, n_classes=6, anchors=None, labels=None):
     # offset generation
     gt_offset = np.zeros((iou.shape[0], 4))
     anchors = np.reshape(anchors, [-1, 4])
-    offsets = labels[:, 0:4] - anchors[maxiou_per_gt]
+    # offsets = labels[:, 0:4] - anchors[maxiou_per_gt]
+    if normalize: #(cx, cy, w, h)
+        anchors = minmax2centroid(anchors)
+        labels = minmax2centroid(labels)
+        # ((cx_gt - cx_anchor) / w_anchor) / 0.1
+        offsets[:, 0] = labels[:, 0] - anchors[maxiou_per_gt][0]
+        offsets[:, 0] /= anchors[maxiou_per_gt][2]
+        offsets[:, 0] /= 0.1
+
+        # ((cy_gt - cy_anchor) / h_anchor) / 0.1
+        offsets[:, 1] = labels[:, 1] - anchors[maxiou_per_gt][1]
+        offsets[:, 1] /= anchors[maxiou_per_gt][3]
+        offsets[:, 1] /= 0.1
+
+        # log(w_gt / w_anchor) / 0.2
+        offsets[:, 2] = np.log(labels[:, 2] / anchors[maxiou_per_gt][2])
+        offsets[:, 2] /= 0.2  
+
+        # log(h_gt / h_anchor) / 0.2
+        offsets[:, 3] = np.log(labels[:, 3] / anchors[maxiou_per_gt][3])
+        offsets[:, 3] /= 0.2  
+
+    else: # (xmin, xmax, ymin, ymax)
+        offsets = anchors[maxiou_per_gt] - labels[:, 0:4]
     gt_offset[maxiou_per_gt] = offsets
 
     return gt_class, gt_offset, gt_mask

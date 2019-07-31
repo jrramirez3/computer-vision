@@ -37,7 +37,8 @@ class DataGenerator(Sequence):
                  n_layers=6,
                  batch_size=4,
                  shuffle=True,
-                 aug_data=False):
+                 aug_data=False,
+                 normalize=False):
         self.dictionary = dictionary
         self.n_classes = n_classes
         self.keys = np.array(list(self.dictionary.keys()))
@@ -50,6 +51,7 @@ class DataGenerator(Sequence):
         self.shuffle = shuffle
         self.aug_data = aug_data
         self.n_layers = len(feature_shapes)
+        self.normalize = normalize
         self.on_epoch_end()
         self.get_n_boxes()
 
@@ -136,10 +138,12 @@ class DataGenerator(Sequence):
                                        n_layers=self.n_layers)
                 anchors = np.reshape(anchors, [-1, 4])
                 iou = layer_utils.iou(anchors, boxes)
+
                 ret = get_gt_data(iou,
                                   n_classes=self.n_classes,
                                   anchors=anchors,
-                                  labels=labels)
+                                  labels=labels,
+                                  normalize=self.normalize)
                 gt_cls, gt_off, gt_msk = ret
                 if index == 0:
                     cls = np.array(gt_cls)
