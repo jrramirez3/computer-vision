@@ -208,25 +208,21 @@ def get_gt_data(iou,
         anchors = minmax2centroid(anchors)
         labels = minmax2centroid(labels)
         # ((cx_gt - cx_anchor) / w_anchor) / 0.1
-        offsets[:, 0] = labels[:, 0] - anchors[maxiou_per_gt][0]
-        offsets[:, 0] /= anchors[maxiou_per_gt][2]
-        offsets[:, 0] /= 0.1
-
         # ((cy_gt - cy_anchor) / h_anchor) / 0.1
-        offsets[:, 1] = labels[:, 1] - anchors[maxiou_per_gt][1]
-        offsets[:, 1] /= anchors[maxiou_per_gt][3]
-        offsets[:, 1] /= 0.1
+        offsets1 = labels[:, 0:2] - anchors[maxiou_per_gt, 0:2]
+        offsets1 /= anchors[maxiou_per_gt, 2:4]
+        offsets1 /= 0.1
 
         # log(w_gt / w_anchor) / 0.2
-        offsets[:, 2] = np.log(labels[:, 2] / anchors[maxiou_per_gt][2])
-        offsets[:, 2] /= 0.2  
-
         # log(h_gt / h_anchor) / 0.2
-        offsets[:, 3] = np.log(labels[:, 3] / anchors[maxiou_per_gt][3])
-        offsets[:, 3] /= 0.2  
+        offsets2 = np.log(labels[:, 2:4] / anchors[maxiou_per_gt, 2:4])
+        offsets2 /= 0.2  
+
+        offsets = np.concatenate([offsets1, offsets2], axis=-1)
 
     else: # (xmin, xmax, ymin, ymax)
         offsets = anchors[maxiou_per_gt] - labels[:, 0:4]
+
     gt_offset[maxiou_per_gt] = offsets
 
     return gt_class, gt_offset, gt_mask
