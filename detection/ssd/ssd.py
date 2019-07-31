@@ -180,7 +180,9 @@ class SSD():
         save_dir = os.path.join(os.getcwd(), 'saved_models')
         model_name = self.basenetwork.name
         model_name += '_' + str(self.n_layers)
-        model_name += '-layer_weights-{epoch:03d}.h5'
+        if self.normalize:
+            model_name += "-norm"
+        model_name += '-weights-{epoch:03d}.h5'
 
         print("Batch size: ", self.batch_size)
         print("Weights filename: ", model_name)
