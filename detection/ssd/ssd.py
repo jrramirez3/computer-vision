@@ -34,6 +34,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import backend as K
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.callbacks import LearningRateScheduler
+from tensorflow.keras.losses import Huber
 
 import tensorflow as tf
 import layer_utils
@@ -182,7 +183,7 @@ class SSD():
         offset *= mask
         pred *= mask
         # Huber loss as approx of smooth L1
-        return tf.losses.Huber(offset, pred)
+        return Huber(offset, pred)
 
     def train_model(self, improved_loss=True):
         if self.train_generator is None:
