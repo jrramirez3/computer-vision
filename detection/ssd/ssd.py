@@ -1,7 +1,7 @@
 """SSD class to build, train, eval SSD models
 
 1)  ResNet50 (v2) backbone.
-    Train with 4 layers of feature maps.
+    Train with 6 layers of feature maps.
     Pls adjust batch size depending on your GPU memory.
     For 1060, -b=1. For V100 32GB, -b=4
 
@@ -35,6 +35,7 @@ from tensorflow.keras import backend as K
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.callbacks import LearningRateScheduler
 
+import tensorflow as tf
 import layer_utils
 import label_utils
 import config
@@ -149,8 +150,10 @@ class SSD():
         self.test_keys = np.array(list(self.test_dictionary.keys()))
 
 
-    #def classes_loss(self, y_true, y_pred):
-    #    return K.categorical_crossentropy(y_true, y_pred)
+    def focal_loss(self, y_true, y_pred):
+        weight = (1 - y_pred)
+        weight *= weight
+        return K.categorical_crossentropy(y_true, y_pred)
 
 
     def offsets_loss(self, y_true, y_pred):
@@ -166,14 +169,30 @@ class SSD():
         pred *= mask
         # we can use L1 or L2 or soft L1
         return K.mean(K.abs(pred - offset), axis=-1)
-        
+       
+    def smooth_L1_loss(y_true, y_pred):
+        # 1st 4 are offsets
+        offset = y_true[..., 0:4]
+        # last 4 are mask
+        mask = y_true[..., 4:8]
+        # pred is actually duplicated for alignment
+        # either we get the 1st or last 4 offset pred
+        # and apply the mask
+        pred = y_pred[..., 0:4]
+        offset *= mask
+        pred *= mask
+        # we can use L1 or L2 or soft L1
+        return tf.losses.huber_loss(offset, pred)
 
-    def train_model(self):
+    def train_model(self, improved_loss=True):
         if self.train_generator is None:
             self.build_generator()
 
         optimizer = Adam(lr=1e-3)
-        loss = ['categorical_crossentropy', self.offsets_loss]
+        if improved_loss:
+            loss = [self.focal_loss, self.smooth_L1_loss]
+        else:
+            loss = ['categorical_crossentropy', self.offsets_loss]
         self.ssd.compile(optimizer=optimizer, loss=loss)
 
         # prepare model model saving directory.
