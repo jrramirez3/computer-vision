@@ -170,7 +170,7 @@ class SSD():
         # we can use L1 or L2 or soft L1
         return K.mean(K.abs(pred - offset), axis=-1)
        
-    def smooth_L1_loss(y_true, y_pred):
+    def smooth_L1_loss(self, y_true, y_pred):
         # 1st 4 are offsets
         offset = y_true[..., 0:4]
         # last 4 are mask
