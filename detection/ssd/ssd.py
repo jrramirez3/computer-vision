@@ -183,7 +183,7 @@ class SSD():
         offset *= mask
         pred *= mask
         # Huber loss as approx of smooth L1
-        return Huber(offset, pred)
+        return Huber()(offset, pred)
 
     def train_model(self, improved_loss=True):
         if self.train_generator is None:
@@ -191,7 +191,7 @@ class SSD():
 
         optimizer = Adam(lr=1e-3)
         if improved_loss:
-            loss = [self.focal_loss, self.offsets_loss]
+            loss = [self.focal_loss, self.smooth_L1_loss]
         else:
             loss = ['categorical_crossentropy', self.offsets_loss]
         self.ssd.compile(optimizer=optimizer, loss=loss)
