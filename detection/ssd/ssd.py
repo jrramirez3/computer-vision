@@ -167,7 +167,7 @@ class SSD():
         pred = y_pred[..., 0:4]
         offset *= mask
         pred *= mask
-        # we can use L1 or L2 or soft L1
+        # we can use L1
         return K.mean(K.abs(pred - offset), axis=-1)
        
     def smooth_L1_loss(self, y_true, y_pred):
@@ -181,8 +181,8 @@ class SSD():
         pred = y_pred[..., 0:4]
         offset *= mask
         pred *= mask
-        # we can use L1 or L2 or soft L1
-        return tf.losses.huber_loss(offset, pred)
+        # Huber loss as approx of smooth L1
+        return tf.losses.Huber(offset, pred)
 
     def train_model(self, improved_loss=True):
         if self.train_generator is None:
