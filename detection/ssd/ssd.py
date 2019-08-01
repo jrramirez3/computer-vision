@@ -191,7 +191,7 @@ class SSD():
 
         optimizer = Adam(lr=1e-3)
         if improved_loss:
-            loss = [self.focal_loss, self.smooth_L1_loss]
+            loss = [self.focal_loss, self.offsets_loss]
         else:
             loss = ['categorical_crossentropy', self.offsets_loss]
         self.ssd.compile(optimizer=optimizer, loss=loss)
