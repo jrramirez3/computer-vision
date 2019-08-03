@@ -152,8 +152,11 @@ class SSD():
 
 
     def focal_loss(self, y_true, y_pred):
+        # gamma = 2
         weight = (1 - y_pred)
         weight *= weight
+        # alpha = 0.25
+        weight *= 0.25
         return K.categorical_crossentropy(weight*y_true, y_pred)
 
 
