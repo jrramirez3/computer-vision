@@ -111,8 +111,10 @@ def show_boxes(image,
     if normalize:
         print("Normalize")
         anchors = minmax2centroid(anchors)
+        offsets[:, 0:2] *= 0.1
         offsets[:, 0:2] *= anchors[:, 2:4]
         offsets[:, 0:2] += anchors[:, 0:2]
+        offsets[:, 2:4] *= 0.2
         offsets[:, 2:4] = np.exp(offsets[:, 2:4])
         offsets[:, 2:4] *= anchors[:, 2:4]
         offsets = centroid2minmax(offsets)

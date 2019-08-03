@@ -222,12 +222,12 @@ def get_gt_data(iou,
         # ((cy_gt - cy_anchor) / h_anchor) / 0.1
         offsets1 = labels[:, 0:2] - anchors[maxiou_per_gt, 0:2]
         offsets1 /= anchors[maxiou_per_gt, 2:4]
-        # offsets1 /= 0.1
+        offsets1 /= 0.1
 
         # log(w_gt / w_anchor) / 0.2
         # log(h_gt / h_anchor) / 0.2
         offsets2 = np.log(labels[:, 2:4] / anchors[maxiou_per_gt, 2:4])
-        # offsets2 /= 0.2  
+        offsets2 /= 0.2  
 
         offsets = np.concatenate([offsets1, offsets2], axis=-1)
 
