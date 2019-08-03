@@ -235,6 +235,7 @@ class SSD():
 
         optimizer = Adam(lr=1e-3)
         l1_loss = self.smooth_l1_loss
+        print("# classes", self.n_classes)
         if focal_loss:
             print("Focal loss function")
             if self.n_classes == 1:

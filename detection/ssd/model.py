@@ -166,6 +166,7 @@ def build_ssd(input_shape,
 
         name = "cls_out" + str(i+1)
         activation = 'sigmoid' if n_classes==1 else 'softmax'
+        print("Activation:", activation)
         classes = Activation(activation,
                              name=name)(classes)
 
