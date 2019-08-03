@@ -73,6 +73,8 @@ def get_label_dictionary(labels, keys):
         if value[2]==value[3]:
             continue
 
+        if label[-1]==0:
+            print("No object labelled as bg:", label[0])
         value = value.astype(np.float32)
         key = label[0]
         boxes = dictionary[key]
