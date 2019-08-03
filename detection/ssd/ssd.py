@@ -159,11 +159,25 @@ class SSD():
         weight *= 0.25
         return K.categorical_crossentropy(weight*y_true, y_pred)
 
+    def binary_focal_loss(self, y_true, y_pred):
+        pt_1 = tf.where(tf.equal(y_true, 1), y_pred, tf.ones_like(y_pred))
+        pt_0 = tf.where(tf.equal(y_true, 0), y_pred, tf.zeros_like(y_pred))
+
+        epsilon = K.epsilon()
+        # clip to prevent NaN's and Inf's
+        pt_1 = K.clip(pt_1, epsilon, 1. - epsilon)
+        pt_0 = K.clip(pt_0, epsilon, 1. - epsilon)
+
+        return -K.sum(alpha * K.pow(1. - pt_1, gamma) * K.log(pt_1)) \
+               -K.sum((1 - alpha) * K.pow(pt_0, gamma) * K.log(1. - pt_0))
+
+
     def focal_loss(self, y_true, y_pred):
-        # Scale predictions so that the class probas of each sample sum to 1
         gamma = 2.0
         alpha = 0.25
-        y_pred /= K.sum(y_pred, axis=-1, keepdims=True)
+
+        # Scale predictions so that the class probas of each sample sum to 1
+        # y_pred /= K.sum(y_pred, axis=-1, keepdims=True)
 
         # Clip the prediction value to prevent NaN's and Inf's
         epsilon = K.epsilon()
@@ -176,7 +190,7 @@ class SSD():
         loss = alpha * K.pow(1 - y_pred, gamma) * cross_entropy
 
         # Sum the losses in mini_batch
-        return K.sum(loss, axis=1)
+        return K.sum(loss, axis=-1)
 
     def mask_offset(self, y_true, y_pred): 
         # 1st 4 are offsets
