@@ -246,7 +246,7 @@ class SSD():
             if self.n_classes == 1:
                 loss = ['binary_crossentropy', l1_loss]
             else:
-                loss = ['categorical_crossentropy', 1_loss]
+                loss = ['categorical_crossentropy', l1_loss]
         self.ssd.compile(optimizer=optimizer, loss=loss)
 
         # prepare model model saving directory.
