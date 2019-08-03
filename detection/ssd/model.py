@@ -165,9 +165,11 @@ def build_ssd(input_shape,
         out_off.append(offsets)
 
         name = "cls_out" + str(i+1)
-        activation = 'sigmoid' if n_classes==1 else 'softmax'
-        print("Activation:", activation)
-        classes = Activation(activation,
+
+        #activation = 'sigmoid' if n_classes==1 else 'softmax'
+        #print("Activation:", activation)
+
+        classes = Activation('softmax',
                              name=name)(classes)
 
         # collect class prediction per scale
