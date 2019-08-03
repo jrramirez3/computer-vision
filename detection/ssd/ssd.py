@@ -254,6 +254,8 @@ class SSD():
         model_name += '_' + str(self.n_layers) + "layer"
         if self.normalize:
             model_name += "-norm"
+        if improved_loss:
+            model_name += "-improved_loss"
         model_name += '-weights-{epoch:03d}.h5'
 
         print("Batch size: ", self.batch_size)
