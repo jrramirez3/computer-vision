@@ -61,6 +61,9 @@ def get_label_dictionary(labels, keys):
 
     for label in labels:
         value = label[1:]
+        tmp = value[1]
+        value[1] = value[2]
+        value[2] = tmp
         if value[0]==value[1]:
             continue
         if value[2]==value[3]:
