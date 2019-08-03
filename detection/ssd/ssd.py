@@ -151,7 +151,7 @@ class SSD():
         self.test_keys = np.array(list(self.test_dictionary.keys()))
 
 
-    def focal_loss(self, y_true, y_pred):
+    def focal_loss_old(self, y_true, y_pred):
         # gamma = 2
         weight = (1 - y_pred)
         weight *= weight
@@ -159,6 +159,24 @@ class SSD():
         weight *= 0.25
         return K.categorical_crossentropy(weight*y_true, y_pred)
 
+    def focal_loss(self, y_true, y_pred):
+        # Scale predictions so that the class probas of each sample sum to 1
+        gamma = 2.0
+        alpha = 0.25
+        y_pred /= K.sum(y_pred, axis=-1, keepdims=True)
+
+        # Clip the prediction value to prevent NaN's and Inf's
+        epsilon = K.epsilon()
+        y_pred = K.clip(y_pred, epsilon, 1. - epsilon)
+
+        # Calculate Cross Entropy
+        cross_entropy = -y_true * K.log(y_pred)
+
+        # Calculate Focal Loss
+        loss = alpha * K.pow(1 - y_pred, gamma) * cross_entropy
+
+        # Sum the losses in mini_batch
+        return K.sum(loss, axis=1)
 
     def mask_offset(self, y_true, y_pred): 
         # 1st 4 are offsets
