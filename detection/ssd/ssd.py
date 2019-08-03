@@ -350,7 +350,7 @@ if __name__ == '__main__':
                         action='store_true', 
                         help=help_)
 
-    help_ = "Normalize predictions"
+    help_ = "Use normalize predictions"
     parser.add_argument("-n",
                         "--normalize",
                         default=False,

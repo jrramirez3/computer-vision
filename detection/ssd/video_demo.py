@@ -1,6 +1,6 @@
 """
 
-python3 video_demo.py -l=4 -r --weights=saved_models/ResNet56v2_4-layer_weights-200.h5
+python3 video_demo.py --weights=saved_models/<weights.h5>
 
 """
 
@@ -24,11 +24,16 @@ class  VideoDemo():
                  detector,
                  camera=0,
                  width=640,
-                 height=480):
+                 height=480,
+                 record=False,
+                 filename="demo.mp4"):
         self.camera = camera
         self.detector = detector
         self.width = width
         self.height = height
+        self.record = record
+        self.filename = filename
+        self.videowriter = None
         self.initialize()
 
     def initialize(self):
@@ -41,8 +46,12 @@ class  VideoDemo():
         self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
         self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
 
-        self.videowriter = cv2.VideoWriter("demo.mp4", cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), 10, (self.width, self.height), isColor=True)
-        # self.capture.set(cv2.CAP_PROP_CONVERT_RGB,True)
+        if self.record:
+            self.videowriter = cv2.VideoWriter(self.filename,
+                                                cv2.VideoWriter_fourcc('m', 'p', '4', 'v'),
+                                                10,
+                                                (self.width, self.height), 
+                                                isColor=True)
 
     def loop(self):
         font = cv2.FONT_HERSHEY_DUPLEX
@@ -60,8 +69,6 @@ class  VideoDemo():
             #img = skimage.img_as_float(imread(filename))
 
             img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) / 255.0
-            #if np.amax(img) > 1.0:
-            #    img = img / 255.0
 
             class_names, rects = self.detector.evaluate(image=img)
             
@@ -104,6 +111,15 @@ class  VideoDemo():
                             color,
                             line_type)
 
+            cv2.imshow('image', image)
+            if self.videowriter is not None:
+                if self.videowriter.isOpened():
+                    self.videowriter.write(image)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+            continue
+
             count = len(items.keys())
             if count > 0:
                 xmin = 10
@@ -129,14 +145,6 @@ class  VideoDemo():
                     ymin += 30
 
                 cv2.line(image, (xmin + 10, ymin), (xmax - 10, ymin), (0,0,0), 1)
-                #cv2.putText(image,
-                #            "_________",
-                #            (xmin + 10, ymin + 25),
-                #            font,
-                #            0.55,
-                #            (0, 0, 0),
-                #            1)
-                # ymin += 30
 
                 display = "P%0.2f Total" % (total)
                 cv2.putText(image,
@@ -147,12 +155,6 @@ class  VideoDemo():
                             (0, 0, 0),
                             1)
 
-            cv2.imshow('image', image)
-            if self.videowriter.isOpened():
-                self.videowriter.write(image)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-
         # When everything done, release the capture
         self.capture.release()
         cv2.destroyAllWindows()
@@ -161,34 +163,24 @@ class  VideoDemo():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     help_ = "Load h5 model trained weights"
-    parser.add_argument("-w", "--weights", help=help_)
-    help_ = "Evaluate model"
-    parser.add_argument("-e",
-                        "--evaluate",
-                        default=False,
-                        action='store_true', 
+    parser.add_argument("-w",
+                        "--weights",
                         help=help_)
-    help_ = "Use ResNetv2 as base network"
-    parser.add_argument("-r",
-                        "--resnet",
+    help_ = "Use tinynet as base network"
+    parser.add_argument("--tiny",
                         default=False,
                         action='store_true',
                         help=help_)
-    help_ = "Image index"
-    parser.add_argument("--image_index",
-                        default=0,
-                        type=int,
+    help_ = "Normalize predictions"
+    parser.add_argument("-n",
+                        "--normalize",
+                        default=False,
+                        action='store_true', 
                         help=help_)
     help_ = "Number of layers"
     parser.add_argument("-l",
                         "--layers",
-                        default=1,
-                        type=int,
-                        help=help_)
-    help_ = "Batch size"
-    parser.add_argument("-b",
-                        "--batch_size",
-                        default=32,
+                        default=6,
                         type=int,
                         help=help_)
     help_ = "Camera index"
@@ -196,18 +188,32 @@ if __name__ == '__main__':
                         default=0,
                         type=int,
                         help=help_)
-
+    help_ = "Record video"
+    parser.add_argument("-r",
+                        "--record",
+                        default=False,
+                        action='store_true', 
+                        help=help_)
+    help_ = "Video filename"
+    parser.add_argument("-f",
+                        "--filename",
+                        default="demo.mp4",
+                        help=help_)
 
     args = parser.parse_args()
 
-    if args.resnet:
+    if args.tiny:
         ssd = SSD(n_layers=args.layers,
-                  build_basenet=build_resnet,
-                  batch_size=args.batch_size)
+                  normalize=args.normalize)
     else:
         ssd = SSD(n_layers=args.layers,
-                  batch_size=args.batch_size)
+                  build_basenet=build_resnet,
+                  normalize=args.normalize)
+
     if args.weights:
         ssd.load_weights(args.weights)
-        videodemo = VideoDemo(detector=ssd, camera=args.camera)
+        videodemo = VideoDemo(detector=ssd,
+                              camera=args.camera,
+                              record=args.record,
+                              filename=args.filename)
         videodemo.loop()
