@@ -285,6 +285,11 @@ if __name__ == '__main__':
                         "--train",
                         action='store_true',
                         help=help_)
+    help_ = "Improved loss functions"
+    parser.add_argument("--improved_loss",
+                        default=False,
+                        action='store_true', 
+                        help=help_)
 
     help_ = "Normalize predictions"
     parser.add_argument("-n",
@@ -331,4 +336,4 @@ if __name__ == '__main__':
             ssd.evaluate(image_file=args.image_file)
             
     if args.train:
-        ssd.train_model()
+        ssd.train_model(improved_loss=args.improved_loss)
