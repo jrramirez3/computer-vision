@@ -199,7 +199,7 @@ class SSD():
         # prepare model model saving directory.
         save_dir = os.path.join(os.getcwd(), 'saved_models')
         model_name = self.basenetwork.name
-        model_name += '_' + str(self.n_layers)
+        model_name += '_' + str(self.n_layers) + "layer"
         if self.normalize:
             model_name += "-norm"
         model_name += '-weights-{epoch:03d}.h5'
