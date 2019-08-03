@@ -154,36 +154,34 @@ class SSD():
     def focal_loss(self, y_true, y_pred):
         weight = (1 - y_pred)
         weight *= weight
-        return K.categorical_crossentropy(y_true, y_pred)
+        return K.categorical_crossentropy(weight*y_true, y_pred)
+
+
+    def mask_offset(self, y_true, y_pred): 
+        # 1st 4 are offsets
+        offset = y_true[..., 0:4]
+        # last 4 are mask
+        mask = y_true[..., 4:8]
+        # pred is actually duplicated for alignment
+        # either we get the 1st or last 4 offset pred
+        # and apply the mask
+        pred = y_pred[..., 0:4]
+        offset *= mask
+        pred *= mask
+        return offset, pred
 
 
     def l1_loss(self, y_true, y_pred):
-        # 1st 4 are offsets
-        offset = y_true[..., 0:4]
-        # last 4 are mask
-        mask = y_true[..., 4:8]
-        # pred is actually duplicated for alignment
-        # either we get the 1st or last 4 offset pred
-        # and apply the mask
-        pred = y_pred[..., 0:4]
-        offset *= mask
-        pred *= mask
+        offset, pred = self.mask_offset(y_true, y_pred)
         # we can use L1
         return K.mean(K.abs(pred - offset), axis=-1)
-       
+
+
     def smooth_l1_loss(self, y_true, y_pred):
-        # 1st 4 are offsets
-        offset = y_true[..., 0:4]
-        # last 4 are mask
-        mask = y_true[..., 4:8]
-        # pred is actually duplicated for alignment
-        # either we get the 1st or last 4 offset pred
-        # and apply the mask
-        pred = y_pred[..., 0:4]
-        offset *= mask
-        pred *= mask
+        offset, pred = self.mask_offset(y_true, y_pred)
         # Huber loss as approx of smooth L1
         return Huber()(offset, pred)
+
 
     def train_model(self, improved_loss=False):
         if self.train_generator is None:

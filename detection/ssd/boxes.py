@@ -75,7 +75,7 @@ def nms(classes,
 
     scores = np.zeros((classes.shape[0],))
     scores[indexes] = np.amax(classes[indexes], axis=1)
-    #print("Validated non bg: ", len(indexes))
+    print("Validated non bg: ", len(indexes))
     #if is_soft:
     #    print("Soft NMS")
 
@@ -110,15 +110,16 @@ def show_boxes(image,
     # nonbg = np.nonzero(objects)[0]
     if normalize:
         print("Normalize")
-        anchors = minmax2centroid(anchors)
+        anchors_centroid = minmax2centroid(anchors)
         offsets[:, 0:2] *= 0.1
-        offsets[:, 0:2] *= anchors[:, 2:4]
-        offsets[:, 0:2] += anchors[:, 0:2]
+        offsets[:, 0:2] *= anchors_centroid[:, 2:4]
+        offsets[:, 0:2] += anchors_centroid[:, 0:2]
         offsets[:, 2:4] *= 0.2
         offsets[:, 2:4] = np.exp(offsets[:, 2:4])
-        offsets[:, 2:4] *= anchors[:, 2:4]
+        offsets[:, 2:4] *= anchors_centroid[:, 2:4]
         offsets = centroid2minmax(offsets)
-        anchors = centroid2minmax(anchors)
+        # convert fr cx,cy,w,h to real offsets
+        offsets[:, 0:4] = offsets[:, 0:4] - anchors
 
     objects, indexes, scores = nms(classes,
                                    offsets,
@@ -134,8 +135,7 @@ def show_boxes(image,
         anchor = anchors[idx] #batch, row, col, box
         offset = offsets[idx]
         
-        for j in range(4):
-            anchor[j] += offset[j]
+        anchor += offset[0:4]
         # default anchor box format is 
         # xmin, xmax, ymin, ymax
         w = anchor[1] - anchor[0]
@@ -147,6 +147,7 @@ def show_boxes(image,
         class_name = "%s: %0.2f" % (class_name, scores[idx])
         class_names.append(class_name)
         rect = (x, y, w, h)
+        print(class_name, rect)
         rects.append(rect)
         if show:
             color = get_box_color(category)
