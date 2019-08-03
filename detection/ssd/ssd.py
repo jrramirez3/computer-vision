@@ -238,14 +238,18 @@ class SSD():
         if focal_loss:
             print("Focal loss function")
             if self.n_classes == 1:
+                print("Binary FL")
                 loss = [self.focal_loss_binary, l1_loss]
             else:
+                print("Categorical FL")
                 loss = [self.focal_loss_categorical, l1_loss]
         else:
             print("Normal loss function")
             if self.n_classes == 1:
+                print("Binary CE")
                 loss = ['binary_crossentropy', l1_loss]
             else:
+                print("Categorical CE")
                 loss = ['categorical_crossentropy', l1_loss]
         self.ssd.compile(optimizer=optimizer, loss=loss)
 
