@@ -19,7 +19,7 @@ import math
 from skimage.io import imread
 from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
-from layer_utils import anchor_boxes
+from layer_utils import anchor_boxes, minmax2centroid, centroid2minmax
 from label_utils import index2class, get_box_color
 
 
@@ -59,7 +59,7 @@ def nms(classes,
             box = np.expand_dims(box, axis=0)
             iou = layer_utils.iou(box, score_box)[0][0]
             if iou >= iou_thresh:
-                #print(score_idx, "overlaps ", idx, "with iou ", iou)
+                print(score_idx, "overlaps ", idx, "with iou ", iou)
                 if is_soft:
                     iou = iou * iou
                     iou /= 0.5
@@ -87,7 +87,8 @@ def show_boxes(image,
                classes,
                offsets,
                feature_shapes,
-               show=True):
+               show=True,
+               normalize=False):
 
     # generate all anchors per feature map
     anchors = []
@@ -107,6 +108,16 @@ def show_boxes(image,
     # objects = np.argmax(classes, axis=1)
     # print(np.unique(objects, return_counts=True))
     # nonbg = np.nonzero(objects)[0]
+    if normalize:
+        print("Normalize")
+        anchors = minmax2centroid(anchors)
+        offsets[:, 0:2] *= anchors[:, 2:4]
+        offsets[:, 0:2] += anchors[:, 0:2]
+        offsets[:, 2:4] = np.exp(offsets[:, 2:4])
+        offsets[:, 2:4] *= anchors[:, 2:4]
+        offsets = centroid2minmax(offsets)
+        anchors = centroid2minmax(anchors)
+
     objects, indexes, scores = nms(classes,
                                    offsets,
                                    anchors,
@@ -118,15 +129,17 @@ def show_boxes(image,
         fig, ax = plt.subplots(1)
         ax.imshow(image)
     for idx in indexes:
-        box = anchors[idx] #batch, row, col, box
+        anchor = anchors[idx] #batch, row, col, box
         offset = offsets[idx]
+        
         for j in range(4):
-            box[j] += offset[j]
-        # default anchor box format is xmin, xmax, ymin, ymax
-        w = box[1] - box[0]
-        h = box[3] - box[2]
-        x = box[0]
-        y = box[2]
+            anchor[j] += offset[j]
+        # default anchor box format is 
+        # xmin, xmax, ymin, ymax
+        w = anchor[1] - anchor[0]
+        h = anchor[3] - anchor[2]
+        x = anchor[0]
+        y = anchor[2]
         category = int(objects[idx])
         class_name = index2class(category)
         class_name = "%s: %0.2f" % (class_name, scores[idx])
@@ -143,8 +156,8 @@ def show_boxes(image,
                              facecolor='none')
             ax.add_patch(rect)
             bbox = dict(color='none', alpha=1.0)
-            ax.text(box[0]+2,
-                    box[2]-16,
+            ax.text(anchor[0] + 2,
+                    anchor[2] - 16,
                     class_name,
                     color=color,
                     fontweight='bold',

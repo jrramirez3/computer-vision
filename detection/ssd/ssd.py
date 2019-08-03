@@ -251,7 +251,8 @@ class SSD():
                                         classes,
                                         offsets,
                                         self.feature_shapes,
-                                        show=show)
+                                        show=show,
+                                        normalize=self.normalize)
         return class_names, rects
 
 
