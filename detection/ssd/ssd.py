@@ -157,7 +157,7 @@ class SSD():
         return K.categorical_crossentropy(y_true, y_pred)
 
 
-    def offsets_loss(self, y_true, y_pred):
+    def l1_loss(self, y_true, y_pred):
         # 1st 4 are offsets
         offset = y_true[..., 0:4]
         # last 4 are mask
@@ -171,7 +171,7 @@ class SSD():
         # we can use L1
         return K.mean(K.abs(pred - offset), axis=-1)
        
-    def smooth_L1_loss(self, y_true, y_pred):
+    def smooth_l1_loss(self, y_true, y_pred):
         # 1st 4 are offsets
         offset = y_true[..., 0:4]
         # last 4 are mask
@@ -185,15 +185,15 @@ class SSD():
         # Huber loss as approx of smooth L1
         return Huber()(offset, pred)
 
-    def train_model(self, improved_loss=True):
+    def train_model(self, improved_loss=False):
         if self.train_generator is None:
             self.build_generator()
 
         optimizer = Adam(lr=1e-3)
         if improved_loss:
-            loss = [self.focal_loss, self.smooth_L1_loss]
+            loss = [self.focal_loss, self.smooth_l1_loss]
         else:
-            loss = ['categorical_crossentropy', self.offsets_loss]
+            loss = ['categorical_crossentropy', self.l1_loss]
         self.ssd.compile(optimizer=optimizer, loss=loss)
 
         # prepare model model saving directory.
