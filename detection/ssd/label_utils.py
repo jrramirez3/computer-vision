@@ -61,6 +61,10 @@ def get_label_dictionary(labels, keys):
 
     for label in labels:
         value = label[1:]
+        if value[0]==value[1]:
+            continue
+        if value[2]==value[3]:
+            continue
         value = value.astype(np.float32)
         key = label[0]
         boxes = dictionary[key]
