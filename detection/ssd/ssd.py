@@ -229,14 +229,14 @@ class SSD():
         return Huber()(offset, pred)
 
 
-    def train_model(self, focal_loss=False):
+    def train_model(self, improved_loss=False):
         if self.train_generator is None:
             self.build_generator()
 
         optimizer = Adam(lr=1e-3)
         print("# classes", self.n_classes)
-        if focal_loss:
-            print("Focal loss function")
+        if improved_loss:
+            print("Improved loss functions")
             if self.n_classes == 1:
                 print("Binary FL")
                 loss = [self.focal_loss_binary, self.smooth_l1_loss]
@@ -244,7 +244,7 @@ class SSD():
                 print("Categorical FL")
                 loss = [self.focal_loss_categorical, self.smooth_l1_loss]
         else:
-            print("Normal loss function")
+            print("Normal loss functions")
             if self.n_classes == 1:
                 print("Binary CE")
                 loss = ['binary_crossentropy', self.l1_loss]
@@ -259,8 +259,8 @@ class SSD():
         model_name += '_' + str(self.n_layers) + "layer"
         if self.normalize:
             model_name += "-norm"
-        if focal_loss:
-            model_name += "-focal_loss"
+        if improved_loss:
+            model_name += "-improved_loss"
         model_name += '-weights-{epoch:03d}.h5'
 
         print("Batch size: ", self.batch_size)
@@ -344,8 +344,8 @@ if __name__ == '__main__':
                         "--train",
                         action='store_true',
                         help=help_)
-    help_ = "Use focal loss function"
-    parser.add_argument("--focal_loss",
+    help_ = "Use focal and smooth l1 loss functions"
+    parser.add_argument("--improved_loss",
                         default=False,
                         action='store_true', 
                         help=help_)
@@ -395,4 +395,4 @@ if __name__ == '__main__':
             ssd.evaluate(image_file=args.image_file)
             
     if args.train:
-        ssd.train_model(focal_loss=args.focal_loss)
+        ssd.train_model(improved_loss=args.improved_loss)
