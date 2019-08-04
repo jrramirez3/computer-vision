@@ -63,9 +63,9 @@ def get_label_dictionary(labels, keys):
         value = label[1:]
 
         # temp hack since mark made a mistake
-        tmp = value[1]
-        value[1] = value[2]
-        value[2] = tmp
+        #tmp = value[1]
+        #value[1] = value[2]
+        #value[2] = tmp
         # end of hack
 
         if value[0]==value[1]:
@@ -75,6 +75,7 @@ def get_label_dictionary(labels, keys):
 
         if label[-1]==0:
             print("No object labelled as bg:", label[0])
+            continue
         value = value.astype(np.float32)
         key = label[0]
         boxes = dictionary[key]
