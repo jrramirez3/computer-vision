@@ -194,7 +194,35 @@ def get_gt_data(iou,
                 anchors=None,
                 labels=None,
                 normalize=False):
+    # each maxiou_per_get is index of anchor w/ max iou
+    # for the given ground truth bounding box
     maxiou_per_gt = np.argmax(iou, axis=0)
+    
+    # todo: which bounding box to assign 
+    # orphaned anchors w/ iou>threshold
+    #print("1. iou shape: ", iou.shape)
+    #print("2. maxiou shape: ", maxiou_per_gt.shape)
+    #print(maxiou_per_gt)
+    iou_gt_thresh = np.argwhere(iou>0.5)
+    #print("3. iou_gt_thresh shape: ", iou_gt_thresh.shape)
+    #print(iou_gt_thresh)
+    #print("4. labels shape", labels.shape) 
+    #print(labels)
+    if iou_gt_thresh.shape[0] > 0:
+        extra_anchors = iou_gt_thresh[:,0]
+        #print("5. extra_anchors shape", extra_anchors.shape) 
+        #print(extra_anchors)
+        extra_classes = iou_gt_thresh[:,1]
+        #print(extra_classes)
+        extra_labels = labels[:,:][extra_classes]
+        maxiou_per_gt = np.concatenate([maxiou_per_gt, extra_anchors],
+                                       axis=0)
+        labels = np.concatenate([labels, extra_labels],
+                                axis=0)
+        #print(maxiou_per_gt)
+        #print(labels)
+
+
     # mask generation
     gt_mask = np.zeros((iou.shape[0], 4))
     gt_mask[maxiou_per_gt] = 1.0
@@ -209,8 +237,10 @@ def get_gt_data(iou,
     maxiou_col = np.reshape(maxiou_per_gt, (maxiou_per_gt.shape[0], 1))
     label_col = np.reshape(labels[:,4], (labels.shape[0], 1)).astype(int)
     row_col = np.append(maxiou_col, label_col, axis=1)
+    # the label of object in maxio_per_gt
     gt_class[row_col[:,0], row_col[:,1]]  = 1.0
-
+    
+    
     # offset generation
     gt_offset = np.zeros((iou.shape[0], 4))
     anchors = np.reshape(anchors, [-1, 4])
