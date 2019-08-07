@@ -106,7 +106,8 @@ def anchor_boxes(feature_shape,
     # (batch_size, feature_map_height, feature_map_width, n_boxes, 4)
     boxes_tensor = centroid2minmax(boxes_tensor)
     boxes_tensor = np.expand_dims(boxes_tensor, axis=0)
-    boxes_tensor = np.tile(boxes_tensor, (feature_shape[0], 1, 1, 1, 1))
+    boxes_tensor = np.tile(boxes_tensor, 
+                           (feature_shape[0], 1, 1, 1, 1))
     return boxes_tensor
 
 # centroid format to minmax format 

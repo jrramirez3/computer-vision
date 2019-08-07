@@ -27,7 +27,7 @@ def nms(classes,
         offsets,
         anchors,
         class_thresh=0.92,
-        iou_thresh=0.2,
+        iou_thresh=0.5,
         is_soft=True):
     # get all non-zero (non-background) objects
     objects = np.argmax(classes, axis=1)
