@@ -30,10 +30,11 @@ def anchor_sizes_new(n_layers=6):
 # linear distribution of sizes depending on 
 # the number of ssd top layers
 def anchor_sizes(n_layers=6):
-    s = np.linspace(0.15, 0.85, n_layers + 1)
+    s = np.linspace(0.2, 0.9, n_layers + 1)
     sizes = []
     for i in range(len(s) - 1):
-        size = [s[i], (s[i] * 0.5)]
+        # size = [s[i], (s[i] * 0.5)]
+        size = [s[i], math.sqrt(s[i] * s[i + 1])]
         sizes.append(size)
 
     return sizes
@@ -195,23 +196,40 @@ def get_gt_data(iou,
                 anchors=None,
                 labels=None,
                 normalize=False,
-                threshold=0.8):
+                threshold=0.6):
     # each maxiou_per_get is index of anchor w/ max iou
     # for the given ground truth bounding box
     maxiou_per_gt = np.argmax(iou, axis=0)
     
-    #print("1. iou shape: ", iou.shape)
-    #print("3. iou_gt_thresh shape: ", iou_gt_thresh.shape)
-    #print(iou_gt_thresh)
 
     # which bounding box to assign 
     # orphaned anchors w/ iou>threshold
     iou_gt_thresh = np.argwhere(iou>threshold)
+
+    #print("2. maxiou shape: ", maxiou_per_gt.shape)
+    #print(maxiou_per_gt)
+    #print("3a. iou_gt_thresh shape: ", iou_gt_thresh.shape)
+    #print(iou_gt_thresh)
+
+    if iou_gt_thresh.shape[0] > 0:
+        index = np.array([])
+        for maxiou in maxiou_per_gt:
+            for i, iou_ in enumerate(iou_gt_thresh):
+                if iou_[0] == maxiou:
+                    # print("Duplicate: ", i, maxiou)
+                    index = np.append(index, i)
+        index = index.astype(int)
+        iou_gt_thresh = np.delete(iou_gt_thresh, index, axis=0)
+        # print("Dup indx: ", index)
+
     if iou_gt_thresh.shape[0] > 0:
         extra_anchors = iou_gt_thresh[:,0]
 
+        #print("1. iou shape: ", iou.shape)
         #print("2. maxiou shape: ", maxiou_per_gt.shape)
         #print(maxiou_per_gt)
+        #print("3b. iou_gt_thresh shape: ", iou_gt_thresh.shape)
+        #print(iou_gt_thresh)
         #print("4. labels shape", labels.shape) 
         #print(labels)
         #print("5. extra_anchors shape", extra_anchors.shape) 
