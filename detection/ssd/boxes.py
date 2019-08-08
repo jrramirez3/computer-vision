@@ -26,7 +26,7 @@ from label_utils import index2class, get_box_color
 def nms(classes,
         offsets,
         anchors,
-        class_thresh=0.92,
+        class_thresh=0.9,
         iou_thresh=0.2,
         is_soft=True):
     # get all non-zero (non-background) objects
