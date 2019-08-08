@@ -55,13 +55,14 @@ from resnet import build_resnet
 
 def lr_scheduler(epoch):
     lr = 1e-3
-    if epoch > 180:
+    epoch_offset = config.params['epoch_offset']
+    if epoch > (180 - epoch_offset):
         lr *= 0.5e-3
-    elif epoch > 140:
+    elif epoch > (140 - epoch_offset):
         lr *= 1e-3
-    elif epoch > 100:
+    elif epoch > (100 - epoch_offset):
         lr *= 1e-2
-    elif epoch > 60:
+    elif epoch > (60 - epoch_offset):
         lr *= 1e-1
     print('Learning rate: ', lr)
     return lr

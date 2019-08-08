@@ -10,6 +10,7 @@ params = {
         'data_path' : 'dataset/drinks',
         'train_labels' : 'labels_train.csv',
         'test_labels' : 'labels_test.csv',
+        'epoch_offset': 0,
         'n_classes' : 3,
         'aspect_ratios': [1, 2, 0.5],
         'classes' : ["background", "Summit", "Coke", "Pine Juice"],
