@@ -262,7 +262,11 @@ class SSD():
             model_name += "-norm"
         if improved_loss:
             model_name += "-improved_loss"
-        model_name += '-weights-{epoch:03d}.h5'
+
+        model_name += "-" 
+        dataset = config.params['dataset']
+        model_name += dataset
+        model_name += '-{epoch:03d}.h5'
 
         print("Batch size: ", self.batch_size)
         print("Weights filename: ", model_name)

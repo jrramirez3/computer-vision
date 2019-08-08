@@ -7,6 +7,7 @@ from __future__ import division
 from __future__ import print_function
 
 params = {
+        'dataset' : 'drinks',
         'data_path' : 'dataset/drinks',
         'train_labels' : 'labels_train.csv',
         'test_labels' : 'labels_test.csv',
