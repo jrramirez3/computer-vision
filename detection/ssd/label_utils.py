@@ -62,12 +62,6 @@ def get_label_dictionary(labels, keys):
     for label in labels:
         value = label[1:]
 
-        # temp hack since mark made a mistake
-        #tmp = value[1]
-        #value[1] = value[2]
-        #value[2] = tmp
-        # end of hack
-
         if value[0]==value[1]:
             continue
         if value[2]==value[3]:
