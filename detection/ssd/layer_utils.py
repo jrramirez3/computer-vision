@@ -194,32 +194,39 @@ def get_gt_data(iou,
                 n_classes=6,
                 anchors=None,
                 labels=None,
-                normalize=False):
+                normalize=False,
+                threshold=0.8):
     # each maxiou_per_get is index of anchor w/ max iou
     # for the given ground truth bounding box
     maxiou_per_gt = np.argmax(iou, axis=0)
     
-    # todo: which bounding box to assign 
-    # orphaned anchors w/ iou>threshold
     #print("1. iou shape: ", iou.shape)
-    #print("2. maxiou shape: ", maxiou_per_gt.shape)
-    #print(maxiou_per_gt)
-    iou_gt_thresh = np.argwhere(iou>0.5)
     #print("3. iou_gt_thresh shape: ", iou_gt_thresh.shape)
     #print(iou_gt_thresh)
-    #print("4. labels shape", labels.shape) 
-    #print(labels)
+
+    # which bounding box to assign 
+    # orphaned anchors w/ iou>threshold
+    iou_gt_thresh = np.argwhere(iou>threshold)
     if iou_gt_thresh.shape[0] > 0:
         extra_anchors = iou_gt_thresh[:,0]
+
+        #print("2. maxiou shape: ", maxiou_per_gt.shape)
+        #print(maxiou_per_gt)
+        #print("4. labels shape", labels.shape) 
+        #print(labels)
         #print("5. extra_anchors shape", extra_anchors.shape) 
         #print(extra_anchors)
+
         extra_classes = iou_gt_thresh[:,1]
-        #print(extra_classes)
         extra_labels = labels[:,:][extra_classes]
+
+        #print(extra_classes)
+
         maxiou_per_gt = np.concatenate([maxiou_per_gt, extra_anchors],
                                        axis=0)
         labels = np.concatenate([labels, extra_labels],
                                 axis=0)
+
         #print(maxiou_per_gt)
         #print(labels)
 
@@ -249,6 +256,8 @@ def get_gt_data(iou,
     if normalize: #(cx, cy, w, h)
         anchors = minmax2centroid(anchors)
         labels = minmax2centroid(labels)
+        #print("6. anchors shape: ", anchors.shape)
+        #print("7. labels shape: ", labels.shape)
         # ((cx_gt - cx_anchor) / w_anchor) / 0.1
         # ((cy_gt - cy_anchor) / h_anchor) / 0.1
         offsets1 = labels[:, 0:2] - anchors[maxiou_per_gt, 0:2]
