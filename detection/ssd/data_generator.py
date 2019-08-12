@@ -109,13 +109,15 @@ class DataGenerator(Sequence):
     def __data_generation(self, keys):
         data_path = self.params['data_path']
         x = np.empty((self.batch_size, *self.input_shape))
-        gt_class = np.empty((self.batch_size, self.n_boxes, self.n_classes))
-        gt_offset = np.empty((self.batch_size, self.n_boxes, 4))
-        gt_mask = np.empty((self.batch_size, self.n_boxes, 4))
+        dim = (self.batch_size, self.n_boxes, self.n_classes)
+        gt_class = np.empty(dim)
+        dim = (self.batch_size, self.n_boxes, 4)
+        gt_offset = np.empty(dim)
+        gt_mask = np.empty(dim)
 
         for i, key in enumerate(keys):
             # images are assumed to be stored in config data_path
-            # key is the imagee filename 
+            # key is the image filename 
             image_path = os.path.join(data_path, key)
             image = skimage.img_as_float(imread(image_path))
 
@@ -132,13 +134,17 @@ class DataGenerator(Sequence):
             boxes = labels[:,0:-1]
             for index, shape in enumerate(self.feature_shapes):
                 shape = (1, *shape)
+                # generate anchor boxes
                 anchors = anchor_boxes(shape,
                                        image.shape,
                                        index=index,
                                        n_layers=self.n_layers)
                 anchors = np.reshape(anchors, [-1, 4])
+                # compute IoU of each anchor box 
+                # with respect to each bounding boxes
                 iou = layer_utils.iou(anchors, boxes)
 
+                # generate ground truth class and offsets
                 ret = get_gt_data(iou,
                                   n_classes=self.n_classes,
                                   anchors=anchors,
