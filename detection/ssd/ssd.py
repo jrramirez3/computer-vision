@@ -35,6 +35,7 @@ from tensorflow.keras import backend as K
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.callbacks import LearningRateScheduler
 from tensorflow.keras.losses import Huber
+from tensorflow.keras.utils import plot_model
 
 import tensorflow as tf
 import layer_utils
@@ -96,6 +97,9 @@ class SSD():
         self.basenetwork = build_basenet(self.input_shape,
                                          n_layers=self.n_layers)
         self.basenetwork.summary()
+        plot_model(self.basenetwork,
+                   to_file="basenetwork.png",
+                   show_shapes=True)
 
         ret = build_ssd(self.input_shape,
                         self.basenetwork,
@@ -106,20 +110,24 @@ class SSD():
         # feature map - basis of class and offset predictions
         self.n_anchors, self.feature_shapes, self.ssd = ret
         self.ssd.summary()
+        plot_model(self.ssd,
+                   to_file="ssd.png",
+                   show_shapes=True)
 
 
     def build_generator(self):
         # multi-thread train data generator
-        self.train_generator = DataGenerator(dictionary=self.dictionary,
-                                             n_classes=self.n_classes,
-                                             params=config.params,
-                                             input_shape=self.input_shape,
-                                             feature_shapes=self.feature_shapes,
-                                             n_anchors=self.n_anchors,
-                                             n_layers=self.n_layers,
-                                             batch_size=self.batch_size,
-                                             shuffle=True,
-                                             normalize=self.normalize)
+        gen = DataGenerator(dictionary=self.dictionary,
+                            n_classes=self.n_classes,
+                            params=config.params,
+                            input_shape=self.input_shape,
+                            feature_shapes=self.feature_shapes,
+                            n_anchors=self.n_anchors,
+                            n_layers=self.n_layers,
+                            batch_size=self.batch_size,
+                            shuffle=True,
+                            normalize=self.normalize)
+        self.train_generator = gen
 
         return
         # we skip the test data generator since it is time consuming
@@ -282,8 +290,6 @@ class SSD():
 
         callbacks = [checkpoint, scheduler]
         self.ssd.fit_generator(generator=self.train_generator,
-                               # disable time-consuming validation 
-                               # validation_data=self.test_generator,
                                use_multiprocessing=True,
                                callbacks=callbacks,
                                epochs=self.epochs,

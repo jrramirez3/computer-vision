@@ -132,7 +132,8 @@ def show_boxes(image,
         fig, ax = plt.subplots(1)
         ax.imshow(image)
     for idx in indexes:
-        anchor = anchors[idx] #batch, row, col, box
+        #batch, row, col, box
+        anchor = anchors[idx] 
         offset = offsets[idx]
         
         anchor += offset[0:4]
