@@ -35,7 +35,7 @@ from tensorflow.keras import backend as K
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.callbacks import LearningRateScheduler
 from tensorflow.keras.losses import Huber
-from tensorflow.keras.utils import plot_model
+# from tensorflow.keras.utils import plot_model
 
 import tensorflow as tf
 import layer_utils
@@ -97,9 +97,9 @@ class SSD():
         self.basenetwork = build_basenet(self.input_shape,
                                          n_layers=self.n_layers)
         self.basenetwork.summary()
-        plot_model(self.basenetwork,
-                   to_file="basenetwork.png",
-                   show_shapes=True)
+        #plot_model(self.basenetwork,
+        #           to_file="basenetwork.png",
+        #           show_shapes=True)
 
         ret = build_ssd(self.input_shape,
                         self.basenetwork,
@@ -110,9 +110,9 @@ class SSD():
         # feature map - basis of class and offset predictions
         self.n_anchors, self.feature_shapes, self.ssd = ret
         self.ssd.summary()
-        plot_model(self.ssd,
-                   to_file="ssd.png",
-                   show_shapes=True)
+        #plot_model(self.ssd,
+        #           to_file="ssd.png",
+        #           show_shapes=True)
 
 
     def build_generator(self):
