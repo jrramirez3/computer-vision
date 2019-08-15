@@ -285,9 +285,9 @@ class SSD():
                                workers=self.workers)
 
 
-    def load_weights(self, weights):
+    def load_weights(self,weights):
         print("Loading weights: ", weights)
-        self.ssd.load_weights(weights)
+        # self.ssd.load_weights(weights)
 
 
     # evaluate image based on image (np tensor) or filename

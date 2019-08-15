@@ -1,6 +1,6 @@
 """
 
-python3 video_demo.py --weights=saved_models/<weights.h5>
+python3 video_demo.py --weights=saved_models/<weights.h5
 
 """
 
@@ -165,6 +165,7 @@ if __name__ == '__main__':
     help_ = "Load h5 model trained weights"
     parser.add_argument("-w",
                         "--weights",
+                        default="saved_models/weights.h5",
                         help=help_)
     help_ = "Use tinynet as base network"
     parser.add_argument("--tiny",
@@ -205,13 +206,13 @@ if __name__ == '__main__':
     if args.tiny:
         ssd = SSD(n_layers=args.layers,
                   normalize=args.normalize)
-    else:
-        ssd = SSD(n_layers=args.layers,
-                  build_basenet=build_resnet,
-                  normalize=args.normalize)
+    # else:
+    #     ssd = SSD(n_layers=args.layers,
+    #               build_basenet=build_resnet,
+    #               normalize=args.normalize)
 
     if args.weights:
-        ssd.load_weights(args.weights)
+        # SSD.load_weights(args.weights)
         videodemo = VideoDemo(detector=ssd,
                               camera=args.camera,
                               record=args.record,
