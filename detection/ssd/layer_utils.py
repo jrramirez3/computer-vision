@@ -30,10 +30,11 @@ def anchor_sizes_new(n_layers=6):
 # linear distribution of sizes depending on 
 # the number of ssd top layers
 def anchor_sizes(n_layers=6):
-    s = np.linspace(0.15, 0.85, n_layers + 1)
+    s = np.linspace(0.2, 0.9, n_layers + 1)
     sizes = []
     for i in range(len(s) - 1):
-        size = [s[i], (s[i] * 0.5)]
+        # size = [s[i], (s[i] * 0.5)]
+        size = [s[i], math.sqrt(s[i] * s[i + 1])]
         sizes.append(size)
 
     return sizes
@@ -106,7 +107,8 @@ def anchor_boxes(feature_shape,
     # (batch_size, feature_map_height, feature_map_width, n_boxes, 4)
     boxes_tensor = centroid2minmax(boxes_tensor)
     boxes_tensor = np.expand_dims(boxes_tensor, axis=0)
-    boxes_tensor = np.tile(boxes_tensor, (feature_shape[0], 1, 1, 1, 1))
+    boxes_tensor = np.tile(boxes_tensor, 
+                           (feature_shape[0], 1, 1, 1, 1))
     return boxes_tensor
 
 # centroid format to minmax format 
@@ -193,36 +195,12 @@ def get_gt_data(iou,
                 n_classes=6,
                 anchors=None,
                 labels=None,
-                normalize=False):
+                normalize=False,
+                threshold=0.6):
     # each maxiou_per_get is index of anchor w/ max iou
     # for the given ground truth bounding box
     maxiou_per_gt = np.argmax(iou, axis=0)
     
-    # todo: which bounding box to assign 
-    # orphaned anchors w/ iou>threshold
-    #print("1. iou shape: ", iou.shape)
-    #print("2. maxiou shape: ", maxiou_per_gt.shape)
-    #print(maxiou_per_gt)
-    iou_gt_thresh = np.argwhere(iou>0.5)
-    #print("3. iou_gt_thresh shape: ", iou_gt_thresh.shape)
-    #print(iou_gt_thresh)
-    #print("4. labels shape", labels.shape) 
-    #print(labels)
-    if iou_gt_thresh.shape[0] > 0:
-        extra_anchors = iou_gt_thresh[:,0]
-        #print("5. extra_anchors shape", extra_anchors.shape) 
-        #print(extra_anchors)
-        extra_classes = iou_gt_thresh[:,1]
-        #print(extra_classes)
-        extra_labels = labels[:,:][extra_classes]
-        maxiou_per_gt = np.concatenate([maxiou_per_gt, extra_anchors],
-                                       axis=0)
-        labels = np.concatenate([labels, extra_labels],
-                                axis=0)
-        #print(maxiou_per_gt)
-        #print(labels)
-
-
     # mask generation
     gt_mask = np.zeros((iou.shape[0], 4))
     gt_mask[maxiou_per_gt] = 1.0
@@ -240,12 +218,12 @@ def get_gt_data(iou,
     # the label of object in maxio_per_gt
     gt_class[row_col[:,0], row_col[:,1]]  = 1.0
     
-    
     # offset generation
     gt_offset = np.zeros((iou.shape[0], 4))
     anchors = np.reshape(anchors, [-1, 4])
-    # offsets = labels[:, 0:4] - anchors[maxiou_per_gt]
-    if normalize: #(cx, cy, w, h)
+
+    #(cx, cy, w, h) format
+    if normalize:
         anchors = minmax2centroid(anchors)
         labels = minmax2centroid(labels)
         # ((cx_gt - cx_anchor) / w_anchor) / 0.1
@@ -261,8 +239,9 @@ def get_gt_data(iou,
 
         offsets = np.concatenate([offsets1, offsets2], axis=-1)
 
-    else: # (xmin, xmax, ymin, ymax)
-        offsets = anchors[maxiou_per_gt] - labels[:, 0:4]
+    # (xmin, xmax, ymin, ymax) format
+    else:
+        offsets = labels[:, 0:4] - anchors[maxiou_per_gt]
 
     gt_offset[maxiou_per_gt] = offsets
 

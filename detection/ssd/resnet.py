@@ -292,6 +292,7 @@ def build_resnet(input_shape,
     # model version
     # orig paper: version = 1 (ResNet v1),
     # improved ResNet: version = 2 (ResNet v2)
+    print("n_layers:", n_layers)
 
     # computed depth from supplied model parameter n
     if version == 1:

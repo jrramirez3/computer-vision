@@ -26,7 +26,7 @@ from label_utils import index2class, get_box_color
 def nms(classes,
         offsets,
         anchors,
-        class_thresh=0.92,
+        class_thresh=0.9,
         iou_thresh=0.2,
         is_soft=True):
     # get all non-zero (non-background) objects
@@ -132,7 +132,8 @@ def show_boxes(image,
         fig, ax = plt.subplots(1)
         ax.imshow(image)
     for idx in indexes:
-        anchor = anchors[idx] #batch, row, col, box
+        #batch, row, col, box
+        anchor = anchors[idx] 
         offset = offsets[idx]
         
         anchor += offset[0:4]

@@ -35,6 +35,7 @@ from tensorflow.keras import backend as K
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.callbacks import LearningRateScheduler
 from tensorflow.keras.losses import Huber
+# from tensorflow.keras.utils import plot_model
 
 import tensorflow as tf
 import layer_utils
@@ -55,13 +56,14 @@ from resnet import build_resnet
 
 def lr_scheduler(epoch):
     lr = 1e-3
-    if epoch > 180:
+    epoch_offset = config.params['epoch_offset']
+    if epoch > (180 - epoch_offset):
         lr *= 0.5e-3
-    elif epoch > 140:
+    elif epoch > (140 - epoch_offset):
         lr *= 1e-3
-    elif epoch > 100:
+    elif epoch > (100 - epoch_offset):
         lr *= 1e-2
-    elif epoch > 60:
+    elif epoch > (60 - epoch_offset):
         lr *= 1e-1
     print('Learning rate: ', lr)
     return lr
@@ -95,6 +97,9 @@ class SSD():
         self.basenetwork = build_basenet(self.input_shape,
                                          n_layers=self.n_layers)
         self.basenetwork.summary()
+        #plot_model(self.basenetwork,
+        #           to_file="basenetwork.png",
+        #           show_shapes=True)
 
         ret = build_ssd(self.input_shape,
                         self.basenetwork,
@@ -105,20 +110,24 @@ class SSD():
         # feature map - basis of class and offset predictions
         self.n_anchors, self.feature_shapes, self.ssd = ret
         self.ssd.summary()
+        #plot_model(self.ssd,
+        #           to_file="ssd.png",
+        #           show_shapes=True)
 
 
     def build_generator(self):
         # multi-thread train data generator
-        self.train_generator = DataGenerator(dictionary=self.dictionary,
-                                             n_classes=self.n_classes,
-                                             params=config.params,
-                                             input_shape=self.input_shape,
-                                             feature_shapes=self.feature_shapes,
-                                             n_anchors=self.n_anchors,
-                                             n_layers=self.n_layers,
-                                             batch_size=self.batch_size,
-                                             shuffle=True,
-                                             normalize=self.normalize)
+        gen = DataGenerator(dictionary=self.dictionary,
+                            n_classes=self.n_classes,
+                            params=config.params,
+                            input_shape=self.input_shape,
+                            feature_shapes=self.feature_shapes,
+                            n_anchors=self.n_anchors,
+                            n_layers=self.n_layers,
+                            batch_size=self.batch_size,
+                            shuffle=True,
+                            normalize=self.normalize)
+        self.train_generator = gen
 
         return
         # we skip the test data generator since it is time consuming
@@ -261,7 +270,11 @@ class SSD():
             model_name += "-norm"
         if improved_loss:
             model_name += "-improved_loss"
-        model_name += '-weights-{epoch:03d}.h5'
+
+        model_name += "-" 
+        dataset = config.params['dataset']
+        model_name += dataset
+        model_name += '-{epoch:03d}.h5'
 
         print("Batch size: ", self.batch_size)
         print("Weights filename: ", model_name)
@@ -277,8 +290,6 @@ class SSD():
 
         callbacks = [checkpoint, scheduler]
         self.ssd.fit_generator(generator=self.train_generator,
-                               # disable time-consuming validation 
-                               # validation_data=self.test_generator,
                                use_multiprocessing=True,
                                callbacks=callbacks,
                                epochs=self.epochs,
