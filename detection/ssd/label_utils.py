@@ -80,6 +80,10 @@ def get_label_dictionary(labels, keys):
         boxes.append(value)
         dictionary[key] = boxes
 
+    for key in keys:
+        if len(dictionary[key]) == 0:
+            del dictionary[key]
+
     return dictionary
 
 
