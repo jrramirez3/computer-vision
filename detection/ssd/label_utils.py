@@ -60,6 +60,10 @@ def get_label_dictionary(labels, keys):
         dictionary[key] = [] # boxes
 
     for label in labels:
+        if len(label) != 6:
+            print("Incomplete label:", label[0])
+            continue
+
         value = label[1:]
 
         if value[0]==value[1]:
