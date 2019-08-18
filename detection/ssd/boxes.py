@@ -78,7 +78,7 @@ def nms(classes,
                 iou = -2 * iou * iou
                 classes[idx] *= math.exp(iou)
                 print("Soft NMS scaling...", idx)
-            else if iou >= iou_thresh:
+            elif iou >= iou_thresh:
                 print(score_idx, "overlaps ", idx, "with iou ", iou)
                 nonbg = nonbg[nonbg != idx]
                 print("NMS Removing ...", idx)
