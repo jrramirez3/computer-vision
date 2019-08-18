@@ -23,13 +23,11 @@ from layer_utils import anchor_boxes, minmax2centroid, centroid2minmax
 from label_utils import index2class, get_box_color
 
 
-def nms(classes,
-        offsets,
-        anchors,
-        is_soft=True):
+def nms(classes, offsets, anchors):
 
     class_thresh = config.params['class_thresh']
     iou_thresh = config.params['iou_thresh']
+    is_soft = config.params['is_soft_nms']
 
     # get all non-zero (non-background) objects
     objects = np.argmax(classes, axis=1)
@@ -56,9 +54,6 @@ def nms(classes,
         if score_max < class_thresh:
             # we are done
             break
-            #if nonbg.size == 0:
-            #    break
-            #continue
 
         indexes.append(score_idx)
         score_anc = anchors[score_idx]
@@ -77,7 +72,7 @@ def nms(classes,
             if is_soft:
                 iou = -2 * iou * iou
                 classes[idx] *= math.exp(iou)
-                print("Soft NMS scaling...", idx)
+                print("Soft NMS scaling ...", idx)
             elif iou >= iou_thresh:
                 print(score_idx, "overlaps ", idx, "with iou ", iou)
                 nonbg = nonbg[nonbg != idx]
@@ -89,9 +84,6 @@ def nms(classes,
 
     scores = np.zeros((classes.shape[0],))
     scores[indexes] = np.amax(classes[indexes], axis=1)
-    print("Validated non bg: ", len(indexes))
-    #if is_soft:
-    #    print("Soft NMS")
 
     return objects, indexes, scores
 
@@ -137,8 +129,7 @@ def show_boxes(image,
 
     objects, indexes, scores = nms(classes,
                                    offsets,
-                                   anchors,
-                                   is_soft=True)
+                                   anchors)
 
     class_names = []
     rects = []

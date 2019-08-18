@@ -15,6 +15,7 @@ params = {
         'aspect_ratios': [1, 2, 0.5],
         'class_thresh' : 0.9,
         'iou_thresh' : 0.2,
+        'is_soft_nms' : True,
         'n_classes' : 3,
         'classes' : ["background", "Summit", "Coke", "Pine Juice"],
         'prices' : [0.0, 10.0, 40.0, 35.0]
