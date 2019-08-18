@@ -12,8 +12,10 @@ params = {
         'train_labels' : 'labels_train.csv',
         'test_labels' : 'labels_test.csv',
         'epoch_offset': 0,
-        'n_classes' : 3,
         'aspect_ratios': [1, 2, 0.5],
+        'class_thresh' : 0.9,
+        'iou_thresh' : 0.2,
+        'n_classes' : 3,
         'classes' : ["background", "Summit", "Coke", "Pine Juice"],
         'prices' : [0.0, 10.0, 40.0, 35.0]
         }

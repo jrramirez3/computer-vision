@@ -119,7 +119,6 @@ class SSD():
         # multi-thread train data generator
         gen = DataGenerator(dictionary=self.dictionary,
                             n_classes=self.n_classes,
-                            params=config.params,
                             input_shape=self.input_shape,
                             feature_shapes=self.feature_shapes,
                             n_anchors=self.n_anchors,
@@ -134,7 +133,6 @@ class SSD():
         # multi-thread test data generator
         self.test_generator = DataGenerator(dictionary=self.test_dictionary,
                                             n_classes=self.n_classes,
-                                            params=config.params,
                                             input_shape=self.input_shape,
                                             feature_shapes=self.feature_shapes,
                                             n_anchors=self.n_anchors,
