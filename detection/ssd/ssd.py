@@ -321,8 +321,14 @@ class SSD():
     def evaluate_test(self):
         csv_path = os.path.join(config.params['data_path'],
                                 config.params['test_labels'])
+        print("CSV", csv_path)
         dictionary, _ = build_label_dictionary(csv_path)
         keys = np.array(list(dictionary.keys()))
+        n_iou = 0
+        s_iou = 0
+        i = 0
+        tp = 0
+        fp = 0
         for key in keys:
             labels = dictionary[key]
             labels = np.array(labels)
@@ -330,6 +336,7 @@ class SSD():
             gt_boxes = labels[:, 0:-1]
             gt_class_ids = labels[:, -1]
             image_file = os.path.join(config.params['data_path'], key)
+            print("Image: ", image_file)
             image = skimage.img_as_float(imread(image_file))
             image = np.expand_dims(image, axis=0)
             classes, offsets = self.ssd.predict(image)
@@ -343,9 +350,44 @@ class SSD():
                                                 show=False,
                                                 normalize=self.normalize)
 
-            ious = layer_utils.iou(gt_boxes, boxes)
-            print(ious)
-            print(class_ids, boxes)
+            boxes = np.reshape(np.array(boxes), (-1,4))
+            iou = layer_utils.iou(gt_boxes, boxes)
+            if iou.size ==0:
+                continue
+            print("--------------")
+            print("gt:", gt_class_ids, gt_boxes)
+            print("iou w/ gt:", iou)
+            print("iou shape:", iou.shape)
+            maxiou_class = np.argmax(iou, axis=1)
+            print("classes: ", maxiou_class)
+            n = iou.shape[0]
+            n_iou += n
+            s = []
+            for j in range(n):
+                s.append(iou[j, maxiou_class[j]])
+                if gt_class_ids[j] == class_ids[maxiou_class[j]]:
+                    tp += 1
+                else:
+                    fp += 1
+
+            fp += abs(len(class_ids) - len(gt_class_ids))
+            print("max ious: ", s)
+            s = np.sum(s)
+            s_iou += s
+            print("pred:", class_ids, boxes)
+            
+
+            print("--------------")
+            # i += 1
+            #if i==10:
+            #    break
+
+        print("sum:", s_iou) 
+        print("num:", n_iou) 
+        print("mIoU:", s_iou/n_iou)
+        print("tp:" , tp)
+        print("fp:" , fp)
+        print("precision:" , tp/(tp+fp))
 
 
 if __name__ == '__main__':
