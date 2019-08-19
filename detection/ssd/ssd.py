@@ -151,12 +151,6 @@ class SSD():
         self.n_classes = len(self.classes)
         self.keys = np.array(list(self.dictionary.keys()))
 
-        return
-        csv_path = os.path.join(config.params['data_path'],
-                                config.params['test_labels'])
-        self.test_dictionary, _ = build_label_dictionary(csv_path)
-        self.test_keys = np.array(list(self.test_dictionary.keys()))
-
 
     def focal_loss_ce(self, y_true, y_pred):
         # only missing in this FL is y_pred clipping
@@ -315,13 +309,40 @@ class SSD():
         classes = np.squeeze(classes)
         # classes = np.argmax(classes, axis=1)
         offsets = np.squeeze(offsets)
-        class_names, rects = show_boxes(image,
-                                        classes,
-                                        offsets,
-                                        self.feature_shapes,
-                                        show=show,
-                                        normalize=self.normalize)
+        class_names, rects, _, _ = show_boxes(image,
+                                              classes,
+                                              offsets,
+                                              self.feature_shapes,
+                                              show=show,
+                                              normalize=self.normalize)
         return class_names, rects
+
+
+    def evaluate_test(self):
+        csv_path = os.path.join(config.params['data_path'],
+                                config.params['test_labels'])
+        dictionary, _ = build_label_dictionary(csv_path)
+        keys = np.array(list(dictionary.keys()))
+        for key in keys:
+            labels = dictionary[key]
+            labels = np.array(labels)
+            # 4 boxes coords are 1st four items of labels
+            boxes = labels[:, 0:-1]
+            classes = labels[:, -1]
+            image_file = os.path.join(config.params['data_path'], key)
+            image = skimage.img_as_float(imread(image_file))
+            image = np.expand_dims(image, axis=0)
+            classes, offsets = self.ssd.predict(image)
+            image = np.squeeze(image, axis=0)
+            classes = np.squeeze(classes)
+            offsets = np.squeeze(offsets)
+            _, _, class_ids, boxes = show_boxes(image,
+                                                classes,
+                                                offsets,
+                                                self.feature_shapes,
+                                                show=False,
+                                                normalize=self.normalize)
+            print(class_ids, boxes)
 
 
 if __name__ == '__main__':
@@ -379,7 +400,7 @@ if __name__ == '__main__':
                         help=help_)
     help_ = "Image file for evaluation"
     parser.add_argument("--image_file",
-                        default="0010000.jpg",
+                        default=None,
                         help=help_)
 
 
@@ -401,7 +422,10 @@ if __name__ == '__main__':
     if args.weights:
         ssd.load_weights(args.weights)
         if args.evaluate:
-            ssd.evaluate(image_file=args.image_file)
+            if args.image_file is None:
+                ssd.evaluate_test()
+            else:
+                ssd.evaluate(image_file=args.image_file)
             
     if args.train:
         ssd.train_model(improved_loss=args.improved_loss)

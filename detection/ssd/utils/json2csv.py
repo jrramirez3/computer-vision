@@ -1,4 +1,8 @@
+'''
 
+Pretty print: python3 -m json.tool < some.json
+
+'''
 
 import json
 import argparse

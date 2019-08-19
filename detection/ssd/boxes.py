@@ -133,6 +133,8 @@ def show_boxes(image,
 
     class_names = []
     rects = []
+    class_ids = []
+    boxes = []
     if show:
         fig, ax = plt.subplots(1)
         ax.imshow(image)
@@ -144,11 +146,13 @@ def show_boxes(image,
         anchor += offset[0:4]
         # default anchor box format is 
         # xmin, xmax, ymin, ymax
+        boxes.append(anchor)
         w = anchor[1] - anchor[0]
         h = anchor[3] - anchor[2]
         x = anchor[0]
         y = anchor[2]
         category = int(objects[idx])
+        class_ids.append(category)
         class_name = index2class(category)
         class_name = "%s: %0.2f" % (class_name, scores[idx])
         class_names.append(class_name)
@@ -177,7 +181,7 @@ def show_boxes(image,
     if show:
         plt.show()
 
-    return class_names, rects
+    return class_names, rects, class_ids, boxes
 
 
 def show_anchors(image,
