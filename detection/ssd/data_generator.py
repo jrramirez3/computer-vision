@@ -30,7 +30,6 @@ class DataGenerator(Sequence):
     def __init__(self,
                  dictionary,
                  n_classes,
-                 params=config.params,
                  input_shape=(480, 640, 3),
                  feature_shapes=[],
                  n_anchors=3,
@@ -42,7 +41,6 @@ class DataGenerator(Sequence):
         self.dictionary = dictionary
         self.n_classes = n_classes
         self.keys = np.array(list(self.dictionary.keys()))
-        self.params = params
         self.input_shape = input_shape
         self.feature_shapes = feature_shapes
         self.n_anchors = n_anchors
@@ -107,7 +105,7 @@ class DataGenerator(Sequence):
 
 
     def __data_generation(self, keys):
-        data_path = self.params['data_path']
+        data_path = config.params['data_path']
         x = np.empty((self.batch_size, *self.input_shape))
         dim = (self.batch_size, self.n_boxes, self.n_classes)
         gt_class = np.empty(dim)
