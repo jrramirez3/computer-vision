@@ -72,11 +72,11 @@ def nms(classes, offsets, anchors):
             if is_soft:
                 iou = -2 * iou * iou
                 classes[idx] *= math.exp(iou)
-                print("Soft NMS scaling ...", idx)
+                #print("Soft NMS scaling ...", idx)
             elif iou >= iou_thresh:
-                print(score_idx, "overlaps ", idx, "with iou ", iou)
+                #print(score_idx, "overlaps ", idx, "with iou ", iou)
                 nonbg = nonbg[nonbg != idx]
-                print("NMS Removing ...", idx)
+                #print("NMS Removing ...", idx)
 
         if nonbg.size == 0:
             break

@@ -327,8 +327,8 @@ class SSD():
             labels = dictionary[key]
             labels = np.array(labels)
             # 4 boxes coords are 1st four items of labels
-            boxes = labels[:, 0:-1]
-            classes = labels[:, -1]
+            gt_boxes = labels[:, 0:-1]
+            gt_class_ids = labels[:, -1]
             image_file = os.path.join(config.params['data_path'], key)
             image = skimage.img_as_float(imread(image_file))
             image = np.expand_dims(image, axis=0)
@@ -342,6 +342,9 @@ class SSD():
                                                 self.feature_shapes,
                                                 show=False,
                                                 normalize=self.normalize)
+
+            ious = layer_utils.iou(gt_boxes, boxes)
+            print(ious)
             print(class_ids, boxes)
 
 
