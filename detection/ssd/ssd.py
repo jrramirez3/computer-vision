@@ -263,6 +263,10 @@ class SSD():
         if improved_loss:
             model_name += "-improved_loss"
 
+        threshold = config.params['gt_label_iou_thresh']
+        if threshold < 1.0:
+            model_name += "-extra_anchors" 
+
         model_name += "-" 
         dataset = config.params['dataset']
         model_name += dataset

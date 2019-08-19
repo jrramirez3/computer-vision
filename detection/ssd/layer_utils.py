@@ -195,12 +195,24 @@ def get_gt_data(iou,
                 n_classes=6,
                 anchors=None,
                 labels=None,
-                normalize=False,
-                threshold=0.6):
+                normalize=False):
     # each maxiou_per_get is index of anchor w/ max iou
     # for the given ground truth bounding box
     maxiou_per_gt = np.argmax(iou, axis=0)
     
+    threshold = config.params['gt_label_iou_thresh']
+    if threshold < 1.0:
+        iou_gt_thresh = np.argwhere(iou>threshold)
+        if iou_gt_thresh.size > 0:
+            extra_anchors = iou_gt_thresh[:,0]
+            extra_classes = iou_gt_thresh[:,1]
+            extra_labels = labels[:,:][extra_classes]
+            indexes = [maxiou_per_gt, extra_anchors]
+            maxiou_per_gt = np.concatenate(indexes,
+                                           axis=0)
+            labels = np.concatenate([labels, extra_labels],
+                                    axis=0)
+
     # mask generation
     gt_mask = np.zeros((iou.shape[0], 4))
     gt_mask[maxiou_per_gt] = 1.0
