@@ -13,7 +13,7 @@ params = {
         'test_labels' : 'labels_test.csv',
         'epoch_offset': 0,
         'aspect_ratios': [1, 2, 0.5],
-        'class_thresh' : 0.9,
+        'class_thresh' : 0.8,
         'iou_thresh' : 0.2,
         'is_soft_nms' : True,
         'n_classes' : 3,
