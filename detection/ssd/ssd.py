@@ -54,7 +54,7 @@ from boxes import show_boxes
 from model import build_tinynet, build_ssd
 from resnet import build_resnet
 
-def lr_scheduler(epoch):
+def lr_scheduler_resnet(epoch):
     lr = 1e-3
     epoch_offset = config.params['epoch_offset']
     if epoch > (180 - epoch_offset):
@@ -68,6 +68,28 @@ def lr_scheduler(epoch):
     print('Learning rate: ', lr)
     return lr
 
+
+def lr_scheduler(epoch):
+    lr = 1e-3
+    epoch_offset = config.params['epoch_offset']
+    if epoch > (200 - epoch_offset):
+        lr *= 1e-4
+    elif epoch > (180 - epoch_offset):
+        lr *= 5e-4
+    elif epoch > (160 - epoch_offset):
+        lr *= 1e-3
+    elif epoch > (140 - epoch_offset):
+        lr *= 5e-3
+    elif epoch > (120 - epoch_offset):
+        lr *= 1e-2
+    elif epoch > (100 - epoch_offset):
+        lr *= 5e-2
+    elif epoch > (80 - epoch_offset):
+        lr *= 1e-1
+    elif epoch > (60 - epoch_offset):
+        lr *= 5e-1
+    print('Learning rate: ', lr)
+    return lr
 
 class SSD():
     def __init__(self,
@@ -230,28 +252,24 @@ class SSD():
         return Huber()(offset, pred)
 
 
-    def train_model(self, improved_loss=False):
+    def train_model(self,
+                    improved_loss=False,
+                    smooth_l1=False):
         if self.train_generator is None:
             self.build_generator()
 
         optimizer = Adam(lr=1e-3)
         print("# classes", self.n_classes)
         if improved_loss:
-            print("Improved loss functions")
-            if self.n_classes == 1:
-                print("Binary FL")
-                loss = [self.focal_loss_binary, self.smooth_l1_loss]
-            else:
-                print("Categorical FL")
-                loss = [self.focal_loss_categorical, self.smooth_l1_loss]
+            print("Focal loss and smooth L1")
+            loss = [self.focal_loss_categorical, self.smooth_l1_loss]
+        elif smooth_l1:
+            print("Smooth L1")
+            loss = ['categorical_crossentropy', self.smooth_l1_loss]
         else:
-            print("Normal loss functions")
-            if self.n_classes == 1:
-                print("Binary CE")
-                loss = ['binary_crossentropy', self.l1_loss]
-            else:
-                print("Categorical CE")
-                loss = ['categorical_crossentropy', self.l1_loss]
+            print("Cross-entropy and L1")
+            loss = ['categorical_crossentropy', self.l1_loss]
+
         self.ssd.compile(optimizer=optimizer, loss=loss)
 
         # prepare model model saving directory.
@@ -428,6 +446,12 @@ if __name__ == '__main__':
                         default=False,
                         action='store_true', 
                         help=help_)
+    help_ = "Use smooth l1 loss function"
+    parser.add_argument("-s",
+                        "--smooth_l1",
+                        default=False,
+                        action='store_true', 
+                        help=help_)
 
     help_ = "Use normalize predictions"
     parser.add_argument("-n",
@@ -477,4 +501,5 @@ if __name__ == '__main__':
                 ssd.evaluate(image_file=args.image_file)
             
     if args.train:
-        ssd.train_model(improved_loss=args.improved_loss)
+        ssd.train_model(improved_loss=args.improved_loss,
+                        smooth_l1=args.smooth_l1)
