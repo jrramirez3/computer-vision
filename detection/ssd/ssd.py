@@ -280,6 +280,8 @@ class SSD():
             model_name += "-norm"
         if improved_loss:
             model_name += "-improved_loss"
+        elif smooth_l1:
+            model_name += "-smooth_l1"
 
         threshold = config.params['gt_label_iou_thresh']
         if threshold < 1.0:
