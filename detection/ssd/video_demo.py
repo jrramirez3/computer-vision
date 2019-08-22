@@ -1,6 +1,6 @@
 """
 
-python3 video_demo.py --weights=saved_models/<weights.h5
+python3 video_demo.py --weights=./saved_models/weights.h5
 
 """
 
@@ -42,7 +42,7 @@ class  VideoDemo():
             print("Error opening video camera")
             return
 
-        # cap.set(cv2.CAP_PROP_FPS, 5)
+        # self.capture.set(cv2.CAP_PROP_FPS, 5)
         self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
         self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
 
@@ -67,7 +67,7 @@ class  VideoDemo():
             #filename = "temp.jpg"
             #cv2.imwrite(filename, image)
             #img = skimage.img_as_float(imread(filename))
-
+            
             img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) / 255.0
 
             class_names, rects = self.detector.evaluate(image=img)
@@ -206,13 +206,13 @@ if __name__ == '__main__':
     if args.tiny:
         ssd = SSD(n_layers=args.layers,
                   normalize=args.normalize)
-    # else:
-    #     ssd = SSD(n_layers=args.layers,
-    #               build_basenet=build_resnet,
-    #               normalize=args.normalize)
+    else:
+        ssd = SSD(n_layers=args.layers,
+                  build_basenet=build_resnet,
+                  normalize=args.normalize)
 
     if args.weights:
-        # SSD.load_weights(args.weights)
+        ssd.load_weights(args.weights)
         videodemo = VideoDemo(detector=ssd,
                               camera=args.camera,
                               record=args.record,
