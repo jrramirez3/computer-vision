@@ -23,51 +23,60 @@ from layer_utils import anchor_boxes, minmax2centroid, centroid2minmax
 from label_utils import index2class, get_box_color
 
 
-def nms(classes,
-        offsets,
-        anchors,
-        class_thresh=0.9,
-        iou_thresh=0.2,
-        is_soft=True):
+def nms(classes, offsets, anchors):
+
+    class_thresh = config.params['class_thresh']
+    iou_thresh = config.params['iou_thresh']
+    is_soft = config.params['is_soft_nms']
+
     # get all non-zero (non-background) objects
     objects = np.argmax(classes, axis=1)
+    # non-zero indexes are not background
     nonbg = np.nonzero(objects)[0]
     #print("Candidate non bg: ", nonbg.size)
 
     indexes = []
     while True:
+        # list of zero probability values
         scores = np.zeros((classes.shape[0],))
+        # set probability values of non-background
         scores[nonbg] = np.amax(classes[nonbg], axis=1)
+
+        # max probability given the list
         score_idx = np.argmax(scores, axis=0)
         score_max = scores[score_idx]
         # print(score_max)
+        
+        # get all non max probability & set it as new nonbg
         nonbg = nonbg[nonbg != score_idx]
+
+        # if obj probability is less than threshold
         if score_max < class_thresh:
-            if nonbg.size == 0:
-                break
-            continue
+            # we are done
+            break
+
         indexes.append(score_idx)
         score_anc = anchors[score_idx]
         score_off = offsets[score_idx][0:4]
         score_box = score_anc + score_off
         score_box = np.expand_dims(score_box, axis=0)
         nonbg_copy = np.copy(nonbg)
+
+        # get all overlapping predictions
         for idx in nonbg_copy:
             anchor = anchors[idx]
             offset = offsets[idx][0:4]
             box = anchor + offset
             box = np.expand_dims(box, axis=0)
             iou = layer_utils.iou(box, score_box)[0][0]
-            if iou >= iou_thresh:
-                print(score_idx, "overlaps ", idx, "with iou ", iou)
-                if is_soft:
-                    iou = iou * iou
-                    iou /= 0.5
-                    classes[idx] *= math.exp(-iou)
-                    print("Scaling...")
-                else:
-                    nonbg = nonbg[nonbg != idx]
-                    print("Removing ...")
+            if is_soft:
+                iou = -2 * iou * iou
+                classes[idx] *= math.exp(iou)
+                #print("Soft NMS scaling ...", idx)
+            elif iou >= iou_thresh:
+                #print(score_idx, "overlaps ", idx, "with iou ", iou)
+                nonbg = nonbg[nonbg != idx]
+                #print("NMS Removing ...", idx)
 
         if nonbg.size == 0:
             break
@@ -75,9 +84,6 @@ def nms(classes,
 
     scores = np.zeros((classes.shape[0],))
     scores[indexes] = np.amax(classes[indexes], axis=1)
-    print("Validated non bg: ", len(indexes))
-    #if is_soft:
-    #    print("Soft NMS")
 
     return objects, indexes, scores
 
@@ -123,11 +129,12 @@ def show_boxes(image,
 
     objects, indexes, scores = nms(classes,
                                    offsets,
-                                   anchors,
-                                   is_soft=True)
+                                   anchors)
 
     class_names = []
     rects = []
+    class_ids = []
+    boxes = []
     if show:
         fig, ax = plt.subplots(1)
         ax.imshow(image)
@@ -139,11 +146,13 @@ def show_boxes(image,
         anchor += offset[0:4]
         # default anchor box format is 
         # xmin, xmax, ymin, ymax
+        boxes.append(anchor)
         w = anchor[1] - anchor[0]
         h = anchor[3] - anchor[2]
         x = anchor[0]
         y = anchor[2]
         category = int(objects[idx])
+        class_ids.append(category)
         class_name = index2class(category)
         class_name = "%s: %0.2f" % (class_name, scores[idx])
         class_names.append(class_name)
@@ -172,7 +181,7 @@ def show_boxes(image,
     if show:
         plt.show()
 
-    return class_names, rects
+    return class_names, rects, class_ids, boxes
 
 
 def show_anchors(image,

@@ -54,7 +54,7 @@ from boxes import show_boxes
 from model import build_tinynet, build_ssd
 from resnet import build_resnet
 
-def lr_scheduler(epoch):
+def lr_scheduler_resnet(epoch):
     lr = 1e-3
     epoch_offset = config.params['epoch_offset']
     if epoch > (180 - epoch_offset):
@@ -68,6 +68,28 @@ def lr_scheduler(epoch):
     print('Learning rate: ', lr)
     return lr
 
+
+def lr_scheduler(epoch):
+    lr = 1e-3
+    epoch_offset = config.params['epoch_offset']
+    if epoch > (200 - epoch_offset):
+        lr *= 1e-4
+    elif epoch > (180 - epoch_offset):
+        lr *= 5e-4
+    elif epoch > (160 - epoch_offset):
+        lr *= 1e-3
+    elif epoch > (140 - epoch_offset):
+        lr *= 5e-3
+    elif epoch > (120 - epoch_offset):
+        lr *= 1e-2
+    elif epoch > (100 - epoch_offset):
+        lr *= 5e-2
+    elif epoch > (80 - epoch_offset):
+        lr *= 1e-1
+    elif epoch > (60 - epoch_offset):
+        lr *= 5e-1
+    print('Learning rate: ', lr)
+    return lr
 
 class SSD():
     def __init__(self,
@@ -119,7 +141,6 @@ class SSD():
         # multi-thread train data generator
         gen = DataGenerator(dictionary=self.dictionary,
                             n_classes=self.n_classes,
-                            params=config.params,
                             input_shape=self.input_shape,
                             feature_shapes=self.feature_shapes,
                             n_anchors=self.n_anchors,
@@ -134,7 +155,6 @@ class SSD():
         # multi-thread test data generator
         self.test_generator = DataGenerator(dictionary=self.test_dictionary,
                                             n_classes=self.n_classes,
-                                            params=config.params,
                                             input_shape=self.input_shape,
                                             feature_shapes=self.feature_shapes,
                                             n_anchors=self.n_anchors,
@@ -152,12 +172,6 @@ class SSD():
         self.dictionary, self.classes  = build_label_dictionary(csv_path)
         self.n_classes = len(self.classes)
         self.keys = np.array(list(self.dictionary.keys()))
-
-        return
-        csv_path = os.path.join(config.params['data_path'],
-                                config.params['test_labels'])
-        self.test_dictionary, _ = build_label_dictionary(csv_path)
-        self.test_keys = np.array(list(self.test_dictionary.keys()))
 
 
     def focal_loss_ce(self, y_true, y_pred):
@@ -238,28 +252,24 @@ class SSD():
         return Huber()(offset, pred)
 
 
-    def train_model(self, improved_loss=False):
+    def train_model(self,
+                    improved_loss=False,
+                    smooth_l1=False):
         if self.train_generator is None:
             self.build_generator()
 
         optimizer = Adam(lr=1e-3)
         print("# classes", self.n_classes)
         if improved_loss:
-            print("Improved loss functions")
-            if self.n_classes == 1:
-                print("Binary FL")
-                loss = [self.focal_loss_binary, self.smooth_l1_loss]
-            else:
-                print("Categorical FL")
-                loss = [self.focal_loss_categorical, self.smooth_l1_loss]
+            print("Focal loss and smooth L1")
+            loss = [self.focal_loss_categorical, self.smooth_l1_loss]
+        elif smooth_l1:
+            print("Smooth L1")
+            loss = ['categorical_crossentropy', self.smooth_l1_loss]
         else:
-            print("Normal loss functions")
-            if self.n_classes == 1:
-                print("Binary CE")
-                loss = ['binary_crossentropy', self.l1_loss]
-            else:
-                print("Categorical CE")
-                loss = ['categorical_crossentropy', self.l1_loss]
+            print("Cross-entropy and L1")
+            loss = ['categorical_crossentropy', self.l1_loss]
+
         self.ssd.compile(optimizer=optimizer, loss=loss)
 
         # prepare model model saving directory.
@@ -270,6 +280,12 @@ class SSD():
             model_name += "-norm"
         if improved_loss:
             model_name += "-improved_loss"
+        elif smooth_l1:
+            model_name += "-smooth_l1"
+
+        threshold = config.params['gt_label_iou_thresh']
+        if threshold < 1.0:
+            model_name += "-extra_anchors" 
 
         model_name += "-" 
         dataset = config.params['dataset']
@@ -317,13 +333,85 @@ class SSD():
         classes = np.squeeze(classes)
         # classes = np.argmax(classes, axis=1)
         offsets = np.squeeze(offsets)
-        class_names, rects = show_boxes(image,
-                                        classes,
-                                        offsets,
-                                        self.feature_shapes,
-                                        show=show,
-                                        normalize=self.normalize)
+        class_names, rects, _, _ = show_boxes(image,
+                                              classes,
+                                              offsets,
+                                              self.feature_shapes,
+                                              show=show,
+                                              normalize=self.normalize)
         return class_names, rects
+
+
+    def evaluate_test(self):
+        csv_path = os.path.join(config.params['data_path'],
+                                config.params['test_labels'])
+        print("CSV", csv_path)
+        dictionary, _ = build_label_dictionary(csv_path)
+        keys = np.array(list(dictionary.keys()))
+        n_iou = 0
+        s_iou = 0
+        i = 0
+        tp = 0
+        fp = 0
+        for key in keys:
+            labels = dictionary[key]
+            labels = np.array(labels)
+            # 4 boxes coords are 1st four items of labels
+            gt_boxes = labels[:, 0:-1]
+            gt_class_ids = labels[:, -1]
+            image_file = os.path.join(config.params['data_path'], key)
+            print("Image: ", image_file)
+            image = skimage.img_as_float(imread(image_file))
+            image = np.expand_dims(image, axis=0)
+            classes, offsets = self.ssd.predict(image)
+            image = np.squeeze(image, axis=0)
+            classes = np.squeeze(classes)
+            offsets = np.squeeze(offsets)
+            _, _, class_ids, boxes = show_boxes(image,
+                                                classes,
+                                                offsets,
+                                                self.feature_shapes,
+                                                show=False,
+                                                normalize=self.normalize)
+
+            boxes = np.reshape(np.array(boxes), (-1,4))
+            iou = layer_utils.iou(gt_boxes, boxes)
+            if iou.size ==0:
+                continue
+            print("--------------")
+            print("gt:", gt_class_ids, gt_boxes)
+            print("iou w/ gt:", iou)
+            print("iou shape:", iou.shape)
+            maxiou_class = np.argmax(iou, axis=1)
+            print("classes: ", maxiou_class)
+            n = iou.shape[0]
+            n_iou += n
+            s = []
+            for j in range(n):
+                s.append(iou[j, maxiou_class[j]])
+                if gt_class_ids[j] == class_ids[maxiou_class[j]]:
+                    tp += 1
+                else:
+                    fp += 1
+
+            fp += abs(len(class_ids) - len(gt_class_ids))
+            print("max ious: ", s)
+            s = np.sum(s)
+            s_iou += s
+            print("pred:", class_ids, boxes)
+            
+
+            print("--------------")
+            # i += 1
+            #if i==10:
+            #    break
+
+        print("sum:", s_iou) 
+        print("num:", n_iou) 
+        print("mIoU:", s_iou/n_iou)
+        print("tp:" , tp)
+        print("fp:" , fp)
+        print("precision:" , tp/(tp+fp))
 
 
 if __name__ == '__main__':
@@ -360,6 +448,12 @@ if __name__ == '__main__':
                         default=False,
                         action='store_true', 
                         help=help_)
+    help_ = "Use smooth l1 loss function"
+    parser.add_argument("-s",
+                        "--smooth_l1",
+                        default=False,
+                        action='store_true', 
+                        help=help_)
 
     help_ = "Use normalize predictions"
     parser.add_argument("-n",
@@ -381,7 +475,7 @@ if __name__ == '__main__':
                         help=help_)
     help_ = "Image file for evaluation"
     parser.add_argument("--image_file",
-                        default="0010000.jpg",
+                        default=None,
                         help=help_)
 
 
@@ -403,7 +497,11 @@ if __name__ == '__main__':
     if args.weights:
         ssd.load_weights(args.weights)
         if args.evaluate:
-            ssd.evaluate(image_file=args.image_file)
+            if args.image_file is None:
+                ssd.evaluate_test()
+            else:
+                ssd.evaluate(image_file=args.image_file)
             
     if args.train:
-        ssd.train_model(improved_loss=args.improved_loss)
+        ssd.train_model(improved_loss=args.improved_loss,
+                        smooth_l1=args.smooth_l1)
